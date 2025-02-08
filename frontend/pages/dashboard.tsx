@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useRouter } from 'next/router';
+import { Container, Button } from 'react-bootstrap';
 
 interface User {
   username: string;
@@ -42,12 +43,12 @@ const Dashboard = () => {
   }
 
   return (
-    <div>
+    <Container>
       <h1>Welcome to the Dashboard, {user.username}</h1>
       <p>Role: {user.role}</p>
       {/* Add your logic and functionalities here */}
-      <button onClick={handleLogout}>Logout</button>
-    </div>
+      <Button variant="danger" onClick={handleLogout}>Logout</Button>
+    </Container>
   );
 };
 

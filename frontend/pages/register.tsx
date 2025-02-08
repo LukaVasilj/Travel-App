@@ -1,61 +1,104 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import { Container, Form, Button } from 'react-bootstrap';
+import { useRouter } from 'next/router';
 
 const Register = () => {
+  const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [qrCode, setQrCode] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [error, setError] = useState('');
   const [csrfToken, setCsrfToken] = useState('');
+  const router = useRouter();
 
   useEffect(() => {
     const fetchCsrfToken = async () => {
       try {
-        console.log("Fetching CSRF token...");
         const response = await axios.get('http://localhost:8000/api/csrf-token', { withCredentials: true });
-        console.log("CSRF token fetched:", response.data.csrf_token);
         setCsrfToken(response.data.csrf_token);
-      } catch (error) {
-        console.error("Error fetching CSRF token:", error);
+      } catch (err) {
+        console.error('Error fetching CSRF token:', err);
       }
     };
+
     fetchCsrfToken();
   }, []);
 
   const handleRegister = async () => {
+    if (password !== confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+
     try {
-      console.log("Registering user with CSRF token:", csrfToken);
-      const response = await axios.post('http://localhost:8000/api/auth/register', { username, password }, {
+      await axios.post('http://localhost:8000/api/auth/register', {
+        email,
+        username,
+        password,
+      }, {
         headers: {
           'X-CSRF-Token': csrfToken,
         },
         withCredentials: true,
       });
-      console.log("Registration successful:", response.data);
-      alert('Registration successful');
-      setQrCode(response.data.qr_code);
-    } catch (error) {
-      console.error("Error during registration:", error);
-      if (axios.isAxiosError(error) && error.response) {
-        alert(error.response.data.detail || 'Registration failed');
+
+      // Redirect to email verification page or show success message
+      alert('Registration successful. Please check your email to verify your account.');
+      router.push('/verify-email');
+    } catch (err) {
+      if (axios.isAxiosError(err) && err.response) {
+        setError(err.response.data.detail || 'Registration failed');
       } else {
-        alert('Registration failed');
+        setError('Registration failed');
       }
     }
   };
 
   return (
-    <div>
+    <Container>
       <h1>Register</h1>
-      <input type="text" placeholder="Username" value={username} onChange={(e) => setUsername(e.target.value)} />
-      <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} />
-      <button onClick={handleRegister}>Register</button>
-      {qrCode && (
-        <div>
-          <h2>Scan this QR code with your authenticator app</h2>
-          <img src={`data:image/png;base64,${qrCode}`} alt="QR Code" />
-        </div>
-      )}
-    </div>
+      {error && <p style={{ color: 'red' }}>{error}</p>}
+      <Form>
+        <Form.Group controlId="formEmail">
+          <Form.Label>Email address</Form.Label>
+          <Form.Control
+            type="email"
+            placeholder="Enter email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+        </Form.Group>
+        <Form.Group controlId="formUsername">
+          <Form.Label>Username</Form.Label>
+          <Form.Control
+            type="text"
+            placeholder="Enter username"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+          />
+        </Form.Group>
+        <Form.Group controlId="formPassword">
+          <Form.Label>Password</Form.Label>
+          <Form.Control
+            type="password"
+            placeholder="Enter password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+        </Form.Group>
+        <Form.Group controlId="formConfirmPassword">
+          <Form.Label>Confirm Password</Form.Label>
+          <Form.Control
+            type="password"
+            placeholder="Confirm password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+          />
+        </Form.Group>
+        <Button variant="primary" onClick={handleRegister}>Register</Button>
+      </Form>
+    </Container>
   );
 };
 

@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useRouter } from 'next/router';
+import { Container, Form, Button } from 'react-bootstrap';
+import { signIn } from 'next-auth/react';
 
 const Login = () => {
   const [username, setUsername] = useState('');
@@ -83,29 +85,28 @@ const Login = () => {
   };
 
   return (
-    <div>
+    <Container>
       <h1>Login</h1>
-      <input 
-        type="text" 
-        placeholder="Username" 
-        value={username} 
-        onChange={(e) => setUsername(e.target.value)} 
-      />
-      <input 
-        type="password" 
-        placeholder="Password" 
-        value={password} 
-        onChange={(e) => setPassword(e.target.value)} 
-      />
-      <input 
-        type="text" 
-        placeholder="2FA Code" 
-        value={otpCode} 
-        onChange={(e) => setOtpCode(e.target.value)} 
-      />
-      <button onClick={handleLogin}>Login</button>
-      <a href="http://localhost:8000/auth/login/google">Login with Google</a>
-    </div>
+      <Form>
+        <Form.Group controlId="formUsername">
+          <Form.Label>Username</Form.Label>
+          <Form.Control type="text" placeholder="Enter username" value={username} onChange={(e) => setUsername(e.target.value)} />
+        </Form.Group>
+        <Form.Group controlId="formPassword">
+          <Form.Label>Password</Form.Label>
+          <Form.Control type="password" placeholder="Enter password" value={password} onChange={(e) => setPassword(e.target.value)} />
+        </Form.Group>
+        <Form.Group controlId="formOtpCode">
+          <Form.Label>2FA Code</Form.Label>
+          <Form.Control type="text" placeholder="Enter 2FA code" value={otpCode} onChange={(e) => setOtpCode(e.target.value)} />
+        </Form.Group>
+        <Button variant="primary" onClick={handleLogin}>Login</Button>
+      </Form>
+      <Button variant="secondary" onClick={() => signIn('google', { callbackUrl: '/' })}>
+  Login with Google
+</Button>
+
+    </Container>
   );
 };
 

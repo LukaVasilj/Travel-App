@@ -1,9 +1,9 @@
-from fastapi import APIRouter, HTTPException, Depends, status, Security
-from pydantic import BaseModel
-from datetime import datetime, timedelta
+import logging
+from fastapi import APIRouter, HTTPException, Depends, Request, status, Security
+from pydantic import BaseModel, EmailStr
+from sqlalchemy.orm import Session
 from jose import JWTError, jwt
 from passlib.context import CryptContext
-from sqlalchemy.orm import Session
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from authlib.integrations.starlette_client import OAuth
 from starlette.requests import Request
@@ -12,9 +12,14 @@ import pyotp
 import qrcode
 from io import BytesIO
 import base64
+from datetime import datetime, timedelta
 
 from database import SessionLocal, engine, Base
 from models import User
+from utils import send_verification_email, hash_password, generate_otp_secret, generate_qr_code, decode_verification_token
+
+# Definirajte logger
+logger = logging.getLogger(__name__)
 
 # Kreiraj sve tablice u bazi (ako ne postoje)
 Base.metadata.create_all(bind=engine)
@@ -60,6 +65,11 @@ class Token(BaseModel):
 class TokenData(BaseModel):
     username: str = None
     role: str = None
+
+class RegisterRequest(BaseModel):
+    email: EmailStr
+    username: str
+    password: str
 
 # Dependency za dobivanje SQLAlchemy sessiona
 def get_db():
@@ -117,28 +127,88 @@ def get_current_admin_user(current_user: User = Depends(get_current_active_user)
 
 # Registracijski endpoint
 @router.post("/register", status_code=status.HTTP_201_CREATED)
-def register(user: UserIn, db: Session = Depends(get_db)):
-    db_user = db.query(User).filter(User.username == user.username).first()
-    if db_user:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Korisnik već postoji"
-        )
-    hashed_password = get_password_hash(user.password)
-    otp_secret = pyotp.random_base32()  # Generiraj tajni ključ za 2FA
-    new_user = User(username=user.username, hashed_password=hashed_password, role="user", otp_secret=otp_secret)
+async def register(request: RegisterRequest, db: Session = Depends(get_db)):
+    # Provjerite da li korisnik već postoji
+    if db.query(User).filter(User.email == request.email).first():
+        raise HTTPException(status_code=400, detail="Email already registered")
+    if db.query(User).filter(User.username == request.username).first():
+        raise HTTPException(status_code=400, detail="Username already taken")
+
+    # Kreirajte novog korisnika
+    hashed_password = hash_password(request.password)
+    new_user = User(email=request.email, username=request.username, hashed_password=hashed_password)
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
-    
-    # Generiranje QR koda
-    otp_uri = pyotp.totp.TOTP(otp_secret).provisioning_uri(name=user.username, issuer_name="TravelApp")
-    qr = qrcode.make(otp_uri)
-    buf = BytesIO()
-    qr.save(buf)
-    img_str = base64.b64encode(buf.getvalue()).decode('utf-8')
-    
-    return JSONResponse(content={"msg": "Registracija uspješna", "otp_secret": otp_secret, "qr_code": img_str})
+
+    # Pošaljite verifikacijski email
+    await send_verification_email(new_user.email)
+
+    return {"message": "User registered successfully. Please check your email to verify your account."}
+
+@router.get("/verify-email")
+def verify_email(token: str, db: Session = Depends(get_db)):
+    logger.debug(f"Received token: {token}")
+    try:
+        # Dekodirajte token i provjerite email
+        email = decode_verification_token(token)
+        logger.debug(f"Decoded email: {email}")
+        if email is None:
+            logger.error("Invalid token or user not found")
+            raise HTTPException(status_code=400, detail="Invalid token or user not found")
+
+        user = db.query(User).filter(User.email == email).first()
+        if not user:
+            logger.error("Invalid token or user not found")
+            raise HTTPException(status_code=400, detail="Invalid token or user not found")
+
+        user.is_email_verified = True
+        db.commit()
+
+        # Generirajte 2FA tajni ključ i QR kod
+        otp_secret = user.otp_secret
+        if not otp_secret:
+            otp_secret = generate_otp_secret()
+            user.otp_secret = otp_secret
+            db.commit()
+
+        qr_code = generate_qr_code(user.username, otp_secret)
+        logger.debug(f"Generated QR code: {qr_code}")
+
+        return JSONResponse(content={"qr_code": qr_code})
+    except Exception as e:
+        logger.error(f"An error occurred: {e}")
+        raise HTTPException(status_code=500, detail="Internal Server Error")
+
+@router.post("/verify-otp")
+def verify_otp(otp_code: str, token: str, db: Session = Depends(get_db)):
+    email = decode_verification_token(token)
+    if email is None:
+        raise HTTPException(status_code=400, detail="Invalid token or user not found")
+
+    user = db.query(User).filter(User.email == email).first()
+    if not user:
+        raise HTTPException(status_code=400, detail="Invalid token or user not found")
+
+    otp = pyotp.TOTP(user.otp_secret)
+    if not otp.verify(otp_code):
+        raise HTTPException(status_code=400, detail="Invalid OTP code")
+
+    return {"message": "OTP code verified successfully"}
+
+@router.post("/setup-2fa")
+def setup_2fa(request: Request, db: Session = Depends(get_db)):
+    user = request.user
+    if not user.is_email_verified:
+        raise HTTPException(status_code=400, detail="Email not verified")
+
+    otp_secret = generate_otp_secret()
+    user.otp_secret = otp_secret
+    db.commit()
+
+    qr_code = generate_qr_code(user.username, otp_secret)
+
+    return {"qr_code": qr_code}
 
 # Prijavni endpoint
 @router.post("/login", response_model=Token)
@@ -157,8 +227,6 @@ def login(user: UserInWithOTP, db: Session = Depends(get_db)):
     
     # Provjera 2FA koda
     otp = pyotp.TOTP(db_user.otp_secret)
-    print(f"Expected OTP: {otp.now()}")  # Dodano za debugiranje
-    print(f"Provided OTP: {user.otp_code}")  # Dodano za debugiranje
     if not otp.verify(user.otp_code):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -199,3 +267,4 @@ async def auth_google_callback(request: Request, db: Session = Depends(get_db)):
     response = RedirectResponse(url='/')
     response.set_cookie(key="access_token", value=f"Bearer {access_token}", httponly=True)
     return response
+

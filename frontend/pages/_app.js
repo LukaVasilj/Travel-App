@@ -1,3 +1,5 @@
+import 'bootstrap/dist/css/bootstrap.min.css';
+
 import '../styles/globals.css'
 import RootLayout from './layout';
 
