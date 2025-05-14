@@ -1,0 +1,82 @@
+[
+  {
+    "id": "acc1",
+    "name": "Hotel Paradise",
+    "type": "hotel",
+    "price": 120,
+    "image": "/images/hotel_paradise.jpg",
+    "destination": "berlin"
+  },
+  {
+    "id": "acc2",
+    "name": "Sunny Apartments",
+    "type": "apartment",
+    "price": 90,
+    "image": "/images/sunny_apartments.jpg",
+    "destination": "zagreb"
+  },
+  {
+    "id": "acc3",
+    "name": "Cozy Hostel",
+    "type": "hostel",
+    "price": 50,
+    "image": "/images/cozy_hostel.jpg",
+    "destination": "berlin"
+  },
+  {
+    "id": "acc4",
+    "name": "Luxury Resort",
+    "type": "hotel",
+    "price": 200,
+    "image": "/images/luxury_resort.jpg",
+    "destination": "paris"
+  },
+  {
+    "id": "acc5",
+    "name": "City Center Apartment",
+    "type": "apartment",
+    "price": 110,
+    "image": "/images/city_center_apartment.jpg",
+    "destination": "berlin"
+  },
+  {
+    "id": "acc6",
+    "name": "Budget Hostel",
+    "type": "hostel",
+    "price": 40,
+    "image": "/images/budget_hostel.jpg",
+    "destination": "zagreb"
+  },
+  {
+    "id": "acc7",
+    "name": "Seaside Hotel",
+    "type": "hotel",
+    "price": 150,
+    "image": "/images/seaside_hotel.jpg",
+    "destination": "split"
+  },
+  {
+    "id": "acc8",
+    "name": "Mountain Retreat",
+    "type": "apartment",
+    "price": 100,
+    "image": "/images/mountain_retreat.jpg",
+    "destination": "paris"
+  },
+  {
+    "id": "acc9",
+    "name": "Backpackers Hostel",
+    "type": "hostel",
+    "price": 30,
+    "image": "/images/backpackers_hostel.jpg",
+    "destination": "berlin"
+  },
+  {
+    "id": "acc10",
+    "name": "Grand Palace Hotel",
+    "type": "hotel",
+    "price": 250,
+    "image": "/images/grand_palace_hotel.jpg",
+    "destination": "london"
+  }
+]

@@ -1,3 +1,4 @@
+import AppNavbar from '../components/Navbar';
 import { useEffect } from 'react';
 import { useRouter } from 'next/router';
 import axios from 'axios';
@@ -31,10 +32,13 @@ const Home = () => {
   }, [router]);
 
   return (
+    <>
+      <AppNavbar />
     <div>
       <h1>Welcome to the Home Page</h1>
       <p>Please log in to access the main page.</p>
     </div>
+    </>
   );
 };
 

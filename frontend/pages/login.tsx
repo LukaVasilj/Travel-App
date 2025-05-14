@@ -1,3 +1,4 @@
+import AppNavbar from '../components/Navbar';
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useRouter } from 'next/router';
@@ -85,6 +86,10 @@ const Login = () => {
   };
 
   return (
+    <>
+
+    <AppNavbar />
+
     <Container>
       <h1>Login</h1>
       <Form>
@@ -107,6 +112,7 @@ const Login = () => {
 </Button>
 
     </Container>
+    </>
   );
 };
 

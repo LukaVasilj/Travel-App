@@ -13,7 +13,8 @@ import qrcode
 from io import BytesIO
 import base64
 from datetime import datetime, timedelta
-
+from database import get_db
+from models import User
 from database import SessionLocal, engine, Base
 from models import User
 from utils import send_verification_email, hash_password, generate_otp_secret, generate_qr_code, decode_verification_token
@@ -27,7 +28,7 @@ Base.metadata.create_all(bind=engine)
 # Konfiguracija
 SECRET_KEY = "tvoja_tajna_kljuceva"  # U produkciji, spremi ovo u env varijable
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+ACCESS_TOKEN_EXPIRE_MINUTES = 240
 
 router = APIRouter()
 
@@ -96,6 +97,7 @@ def create_access_token(data: dict, expires_delta: timedelta = None):
     return encoded_jwt
 
 def get_current_user(token: str = Security(oauth2_scheme), db: Session = Depends(get_db)):
+    logger.debug(f"Received token: {token}")
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -103,16 +105,21 @@ def get_current_user(token: str = Security(oauth2_scheme), db: Session = Depends
     )
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        logger.debug(f"Decoded payload: {payload}")
         username: str = payload.get("sub")
         role: str = payload.get("role")
         if username is None or role is None:
+            logger.error("Token is missing 'sub' or 'role'")
             raise credentials_exception
         token_data = TokenData(username=username, role=role)
-    except JWTError:
+    except JWTError as e:
+        logger.error(f"JWT decoding error: {e}")
         raise credentials_exception
     user = db.query(User).filter(User.username == token_data.username).first()
     if user is None:
+        logger.error(f"User not found for username: {token_data.username}")
         raise credentials_exception
+    logger.debug(f"Authenticated user: {user.username}, role: {user.role}")
     return user
 
 def get_current_active_user(current_user: User = Depends(get_current_user)):
@@ -124,6 +131,7 @@ def get_current_admin_user(current_user: User = Depends(get_current_active_user)
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Not enough permissions")
     return current_user
+
 
 # Registracijski endpoint
 @router.post("/register", status_code=status.HTTP_201_CREATED)
@@ -148,36 +156,35 @@ async def register(request: RegisterRequest, db: Session = Depends(get_db)):
 
 @router.get("/verify-email")
 def verify_email(token: str, db: Session = Depends(get_db)):
-    logger.debug(f"Received token: {token}")
+    logger.debug(f"Received email verification token: {token}")
     try:
-        # Dekodirajte token i provjerite email
         email = decode_verification_token(token)
-        logger.debug(f"Decoded email: {email}")
+        logger.debug(f"Decoded email from token: {email}")
         if email is None:
-            logger.error("Invalid token or user not found")
-            raise HTTPException(status_code=400, detail="Invalid token or user not found")
+            logger.error("Invalid token or email not found")
+            raise HTTPException(status_code=400, detail="Invalid token or email not found")
 
         user = db.query(User).filter(User.email == email).first()
         if not user:
-            logger.error("Invalid token or user not found")
-            raise HTTPException(status_code=400, detail="Invalid token or user not found")
+            logger.error(f"User not found for email: {email}")
+            raise HTTPException(status_code=400, detail="Invalid token or email not found")
 
         user.is_email_verified = True
         db.commit()
+        logger.debug(f"Email verified for user: {user.username}")
 
-        # Generirajte 2FA tajni ključ i QR kod
         otp_secret = user.otp_secret
         if not otp_secret:
             otp_secret = generate_otp_secret()
             user.otp_secret = otp_secret
             db.commit()
+            logger.debug(f"Generated OTP secret for user: {user.username}")
 
         qr_code = generate_qr_code(user.username, otp_secret)
-        logger.debug(f"Generated QR code: {qr_code}")
-
+        logger.debug(f"Generated QR code for user: {user.username}")
         return JSONResponse(content={"qr_code": qr_code})
     except Exception as e:
-        logger.error(f"An error occurred: {e}")
+        logger.error(f"Error during email verification: {e}")
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
 @router.post("/verify-otp")
@@ -210,39 +217,56 @@ def setup_2fa(request: Request, db: Session = Depends(get_db)):
 
     return {"qr_code": qr_code}
 
-# Prijavni endpoint
 @router.post("/login", response_model=Token)
 def login(user: UserInWithOTP, db: Session = Depends(get_db)):
+    logger.debug(f"Login attempt for username: {user.username}")
     db_user = db.query(User).filter(User.username == user.username).first()
     if not db_user:
+        logger.error(f"User not found: {user.username}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Neispravno korisničko ime ili lozinka"
+            detail="Invalid username or password"
         )
     if not verify_password(user.password, db_user.hashed_password):
+        logger.error(f"Invalid password for user: {user.username}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Neispravno korisničko ime ili lozinka"
+            detail="Invalid username or password"
         )
     
     # Provjera 2FA koda
     otp = pyotp.TOTP(db_user.otp_secret)
     if not otp.verify(user.otp_code):
+        logger.error(f"Invalid 2FA code for user: {user.username}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Neispravan 2FA kod"
+            detail="Invalid 2FA code"
         )
     
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
         data={"sub": db_user.username, "role": db_user.role}, expires_delta=access_token_expires
     )
+    logger.debug(f"User {user.username} logged in successfully")
     return {"access_token": access_token, "token_type": "bearer"}
 
-# Ruta za dobivanje trenutnog korisnika
-@router.get("/me", response_model=TokenData)
-def read_users_me(current_user: User = Depends(get_current_user)):
-    return {"username": current_user.username, "role": current_user.role}
+# Ruta za dobivanje trenutnog korisnika s više informacija
+@router.get("/me")
+def get_current_user_info(current_user: User = Depends(get_current_user)):
+    logger.debug(f"Fetching current user info for: {current_user.username}")
+    return {
+        "user_id": current_user.id,
+        "username": current_user.username,
+        "email": current_user.email,
+        "role": current_user.role,
+    }
+
+
+# Endpoint za pretraživanje korisnika po username
+@router.get("/users")
+def search_users(search: str, db: Session = Depends(get_db)):
+    users = db.query(User).filter(User.username.ilike(f"%{search}%")).all()
+    return {"users": [{"id": user.id, "username": user.username, "email": user.email} for user in users]}
 
 # OAuth Google login
 @router.get('/login/google')

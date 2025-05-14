@@ -1,3 +1,4 @@
+import AppNavbar from '../components/Navbar';
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useRouter } from 'next/router';
@@ -33,6 +34,10 @@ const GlavnaStranica = () => {
     fetchUser();
   }, [router]);
 
+  const handleCreateTrip = () => {
+    router.push('/trips/new'); // Preusmjeri na CreateTrip stranicu
+  };
+
   const handleLogout = () => {
     localStorage.removeItem('access_token');
     router.push('/login');
@@ -43,12 +48,18 @@ const GlavnaStranica = () => {
   }
 
   return (
+    <>
+      <AppNavbar />
     <Container>
       <h1>Welcome to the Main Page, {user.username}</h1>
       <p>Role: {user.role}</p>
       {/* Add your logic and functionalities here */}
+      <Button variant="primary" onClick={handleCreateTrip}>
+          Create New Trip
+        </Button>
       <Button variant="danger" onClick={handleLogout}>Logout</Button>
     </Container>
+    </>
   );
 };
 

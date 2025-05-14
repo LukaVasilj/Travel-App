@@ -6,6 +6,7 @@ from pydantic import BaseModel
 from starlette.responses import JSONResponse
 
 from routers import auth  # Ensure your auth router is imported correctly
+from routers import friends
 
 # Define CSRF configuration
 class CsrfSettings(BaseModel):
@@ -36,6 +37,7 @@ def get_csrf_config():
 
 # Include the auth router
 app.include_router(auth.router, prefix="/api/auth")
+app.include_router(friends.router, prefix="/api/friends", tags=["friends"])
 
 # CSRF token endpoint: generate token and set it in a cookie manually
 @app.get("/api/csrf-token")

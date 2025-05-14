@@ -1,0 +1,47 @@
+[
+  {
+    "id": "bus1",
+    "name": "Shuttle Bus",
+    "currLocation": "dubrovnik",
+    "departure": "split",
+    "price": 25,
+    "departure_time": "8:00 AM",
+    "arrival_time": "12:00 PM"
+  },
+  {
+    "id": "car1",
+    "name": "Rent-a-Car",
+    "currLocation": "dubrovnik",
+    "departure": "split",
+    "price": 100,
+    "departure_time": "9:00 AM",
+    "arrival_time": "12:00 PM"
+  },
+  {
+    "id": "train1",
+    "name": "Express Train",
+    "currLocation": "zagreb",
+    "departure": "split",
+    "price": 50,
+    "departure_time": "7:00 AM",
+    "arrival_time": "1:00 PM"
+  },
+  {
+    "id": "bus2",
+    "name": "Shuttle Bus",
+    "currLocation": "zagreb",
+    "departure": "split",
+    "price": 30,
+    "departure_time": "6:00 AM",
+    "arrival_time": "1:00 PM"
+  },
+  {
+    "id": "car2",
+    "name": "Rent-a-Car",
+    "currLocation": "zagreb",
+    "departure": "split",
+    "price": 120,
+    "departure_time": "8:00 AM",
+    "arrival_time": "1:00 PM"
+  }
+]

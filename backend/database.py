@@ -14,3 +14,11 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 # Deklarativna baza (svi modeli će biti definirani preko nje)
 Base = declarative_base()
+
+# Dependency za dobivanje SQLAlchemy sessiona
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()

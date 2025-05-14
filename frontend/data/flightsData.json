@@ -1,0 +1,38 @@
+[
+  {
+    "id": "flight1",
+    "airline": "Airline A",
+    "departure": "split",
+    "destination": "berlin",
+    "price": 200,
+    "departure_time": "10:00 AM",
+    "arrival_time": "12:30 PM"
+  },
+  {
+    "id": "flight2",
+    "airline": "Airline B",
+    "departure": "zagreb",
+    "destination": "berlin",
+    "price": 180,
+    "departure_time": "1:00 PM",
+    "arrival_time": "3:30 PM"
+  },
+  {
+    "id": "flight3",
+    "airline": "Airline C",
+    "departure": "split",
+    "destination": "paris",
+    "price": 250,
+    "departure_time": "6:00 AM",
+    "arrival_time": "9:00 AM"
+  },
+  {
+    "id": "flight4",
+    "airline": "Airline D",
+    "departure": "split",
+    "destination": "berlin",
+    "price": 220,
+    "departure_time": "4:00 PM",
+    "arrival_time": "6:30 PM"
+  }
+]

@@ -1,0 +1,46 @@
+[
+  {
+    "id": "bus1",
+    "type": "bus",
+    "departure": "split",
+    "destination": "berlin",
+    "price": 50,
+    "duration": "12h",
+    "company": "Croatia Bus",
+    "departure_time": "8:00 AM",
+    "arrival_time": "8:00 PM"
+  },
+  {
+    "id": "bus2",
+    "type": "bus",
+    "departure": "split",
+    "destination": "zagreb",
+    "price": 20,
+    "duration": "4h",
+    "company": "FlixBus",
+    "departure_time": "6:00 AM",
+    "arrival_time": "10:00 AM"
+  },
+  {
+    "id": "train1",
+    "type": "train",
+    "departure": "zagreb",
+    "destination": "berlin",
+    "price": 70,
+    "duration": "10h",
+    "company": "EuroRail",
+    "departure_time": "7:00 AM",
+    "arrival_time": "5:00 PM"
+  },
+  {
+    "id": "car1",
+    "type": "rent-a-car",
+    "departure": "split",
+    "destination": "berlin",
+    "price": 200,
+    "duration": "10h",
+    "company": "Hertz",
+    "departure_time": "9:00 AM",
+    "arrival_time": "7:00 PM"
+  }
+]

@@ -1,3 +1,4 @@
+import AppNavbar from '../components/Navbar';
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Container, Form, Button } from 'react-bootstrap';
@@ -56,6 +57,8 @@ const Register = () => {
   };
 
   return (
+    <>
+      <AppNavbar />
     <Container>
       <h1>Register</h1>
       {error && <p style={{ color: 'red' }}>{error}</p>}
@@ -99,6 +102,7 @@ const Register = () => {
         <Button variant="primary" onClick={handleRegister}>Register</Button>
       </Form>
     </Container>
+    </>
   );
 };
 
