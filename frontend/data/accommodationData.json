@@ -5,7 +5,22 @@
     "type": "hotel",
     "price": 120,
     "image": "/images/hotel_paradise.jpg",
-    "destination": "berlin"
+    "images": [
+      "/images/hotel_paradise1.jpg",
+      "/images/hotel_paradise2.jpg",
+      "/images/hotel_paradise3.jpg",
+      "/images/hotel_paradise4.jpg"
+      
+ 
+    ],
+    "destination": "berlin",
+    "location": "Alexanderplatz 1, Berlin",
+    "description": "A luxury hotel in the heart of Berlin with modern amenities and a rooftop pool.",
+    "bookingLink": "https://www.booking.com/hotel/de/paradise.html",
+    "reviews": [
+      { "user": "Ana", "comment": "Odličan hotel, čisto i udobno!", "rating": 5 },
+      { "user": "Ivan", "comment": "Blizu centra, doručak odličan.", "rating": 4 }
+    ]
   },
   {
     "id": "acc2",
@@ -13,15 +28,35 @@
     "type": "apartment",
     "price": 90,
     "image": "/images/sunny_apartments.jpg",
-    "destination": "zagreb"
+    "images": [
+      "/images/sunny_apartments.jpg",
+      "/images/sunny_apartments.jpg",
+      "/images/sunny_apartments.jpg"
+    ],
+    "destination": "berlin",
+    "location": "Prenzlauer Allee 45, Berlin",
+    "description": "Spacious and sunny apartments perfect for families and longer stays.",
+    "reviews": [
+      { "user": "Maja", "comment": "Vrlo prostrano i svijetlo!", "rating": 5 }
+    ]
   },
   {
     "id": "acc3",
-    "name": "Cozy Hostel",
-    "type": "hostel",
+    "name": "Cozy Hotel",
+    "type": "hotel",
     "price": 50,
-    "image": "/images/cozy_hostel.jpg",
-    "destination": "berlin"
+    "image": "/images/cozy_hotel.jpg",
+    "images": [
+      "/images/cozy_hotel.jpg",
+      "/images/cozy_hotel.jpg",
+      "/images/cozy_hotel.jpg"
+    ],
+    "destination": "berlin",
+    "location": "Friedrichstrasse 100, Berlin",
+    "description": "Affordable and cozy hotel with friendly staff.",
+    "reviews": [
+      { "user": "Petar", "comment": "Dobar omjer cijene i kvalitete.", "rating": 4 }
+    ]
   },
   {
     "id": "acc4",
@@ -29,7 +64,17 @@
     "type": "hotel",
     "price": 200,
     "image": "/images/luxury_resort.jpg",
-    "destination": "paris"
+    "images": [
+      "/images/luxury_resort.jpg",
+      "/images/luxury_resort.jpg",
+      "/images/luxury_resort.jpg"
+    ],
+    "destination": "berlin",
+    "location": "Kurfürstendamm 10, Berlin",
+    "description": "Exclusive resort with spa, pool, and fine dining.",
+    "reviews": [
+      { "user": "Sara", "comment": "Luksuzno iskustvo!", "rating": 5 }
+    ]
   },
   {
     "id": "acc5",
@@ -37,7 +82,17 @@
     "type": "apartment",
     "price": 110,
     "image": "/images/city_center_apartment.jpg",
-    "destination": "berlin"
+    "images": [
+      "/images/city_center_apartment.jpg",
+      "/images/city_center_apartment.jpg",
+      "/images/city_center_apartment.jpg"
+    ],
+    "destination": "berlin",
+    "location": "Unter den Linden 5, Berlin",
+    "description": "Modern apartment in the city center, close to all attractions.",
+    "reviews": [
+      { "user": "Luka", "comment": "Savršena lokacija!", "rating": 5 }
+    ]
   },
   {
     "id": "acc6",
@@ -45,7 +100,17 @@
     "type": "hostel",
     "price": 40,
     "image": "/images/budget_hostel.jpg",
-    "destination": "zagreb"
+    "images": [
+      "/images/budget_hostel.jpg",
+      "/images/budget_hostel.jpg",
+      "/images/budget_hostel.jpg"
+    ],
+    "destination": "berlin",
+    "location": "Karl-Marx-Strasse 20, Berlin",
+    "description": "Affordable hostel for backpackers and solo travelers.",
+    "reviews": [
+      { "user": "Marko", "comment": "Odlično za budžet putnike.", "rating": 4 }
+    ]
   },
   {
     "id": "acc7",
@@ -53,7 +118,17 @@
     "type": "hotel",
     "price": 150,
     "image": "/images/seaside_hotel.jpg",
-    "destination": "split"
+    "images": [
+      "/images/seaside_hotel.jpg",
+      "/images/seaside_hotel.jpg",
+      "/images/seaside_hotel.jpg"
+    ],
+    "destination": "berlin",
+    "location": "Am See 3, Berlin",
+    "description": "Hotel with a beautiful view of the lake.",
+    "reviews": [
+      { "user": "Jelena", "comment": "Predivan pogled na jezero.", "rating": 5 }
+    ]
   },
   {
     "id": "acc8",
@@ -61,7 +136,17 @@
     "type": "apartment",
     "price": 100,
     "image": "/images/mountain_retreat.jpg",
-    "destination": "paris"
+    "images": [
+      "/images/mountain_retreat.jpg",
+      "/images/mountain_retreat.jpg",
+      "/images/mountain_retreat.jpg"
+    ],
+    "destination": "berlin",
+    "location": "Bergstrasse 8, Berlin",
+    "description": "Peaceful retreat near the mountains, ideal for relaxation.",
+    "reviews": [
+      { "user": "Tina", "comment": "Mirno i opuštajuće.", "rating": 5 }
+    ]
   },
   {
     "id": "acc9",
@@ -69,7 +154,17 @@
     "type": "hostel",
     "price": 30,
     "image": "/images/backpackers_hostel.jpg",
-    "destination": "berlin"
+    "images": [
+      "/images/backpackers_hostel.jpg",
+      "/images/backpackers_hostel.jpg",
+      "/images/backpackers_hostel.jpg"
+    ],
+    "destination": "berlin",
+    "location": "Hostelstrasse 12, Berlin",
+    "description": "Popular hostel among young travelers.",
+    "reviews": [
+      { "user": "Nikola", "comment": "Super atmosfera i ljudi.", "rating": 4 }
+    ]
   },
   {
     "id": "acc10",
@@ -77,6 +172,16 @@
     "type": "hotel",
     "price": 250,
     "image": "/images/grand_palace_hotel.jpg",
-    "destination": "london"
+    "images": [
+      "/images/grand_palace_hotel.jpg",
+      "/images/grand_palace_hotel.jpg",
+      "/images/grand_palace_hotel.jpg"
+    ],
+    "destination": "berlin",
+    "location": "Palaststrasse 1, Berlin",
+    "description": "Elegant hotel with palace-like architecture and premium service.",
+    "reviews": [
+      { "user": "Petra", "comment": "Prava palača, sve preporuke!", "rating": 5 }
+    ]
   }
 ]

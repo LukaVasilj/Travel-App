@@ -18,6 +18,7 @@ from models import User
 from database import SessionLocal, engine, Base
 from models import User
 from utils import send_verification_email, hash_password, generate_otp_secret, generate_qr_code, decode_verification_token
+from fastapi.responses import HTMLResponse
 
 # Definirajte logger
 logger = logging.getLogger(__name__)
@@ -53,11 +54,9 @@ oauth.register(
 
 # Pydantic sheme
 class UserIn(BaseModel):
-    username: str
+    email: str
     password: str
 
-class UserInWithOTP(UserIn):
-    otp_code: str
 
 class Token(BaseModel):
     access_token: str
@@ -106,20 +105,20 @@ def get_current_user(token: str = Security(oauth2_scheme), db: Session = Depends
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         logger.debug(f"Decoded payload: {payload}")
-        username: str = payload.get("sub")
+        email: str = payload.get("sub")  # Use email instead of username
         role: str = payload.get("role")
-        if username is None or role is None:
+        if email is None or role is None:
             logger.error("Token is missing 'sub' or 'role'")
             raise credentials_exception
-        token_data = TokenData(username=username, role=role)
+        token_data = TokenData(username=email, role=role)
     except JWTError as e:
         logger.error(f"JWT decoding error: {e}")
         raise credentials_exception
-    user = db.query(User).filter(User.username == token_data.username).first()
+    user = db.query(User).filter(User.email == token_data.username).first()  # Query by email
     if user is None:
-        logger.error(f"User not found for username: {token_data.username}")
+        logger.error(f"User not found for email: {token_data.username}")
         raise credentials_exception
-    logger.debug(f"Authenticated user: {user.username}, role: {user.role}")
+    logger.debug(f"Authenticated user: {user.email}, role: {user.role}")
     return user
 
 def get_current_active_user(current_user: User = Depends(get_current_user)):
@@ -154,38 +153,36 @@ async def register(request: RegisterRequest, db: Session = Depends(get_db)):
 
     return {"message": "User registered successfully. Please check your email to verify your account."}
 
+
 @router.get("/verify-email")
 def verify_email(token: str, db: Session = Depends(get_db)):
-    logger.debug(f"Received email verification token: {token}")
-    try:
-        email = decode_verification_token(token)
-        logger.debug(f"Decoded email from token: {email}")
-        if email is None:
-            logger.error("Invalid token or email not found")
-            raise HTTPException(status_code=400, detail="Invalid token or email not found")
+    email = decode_verification_token(token)
+    if not email:
+        return JSONResponse(
+            content={"detail": "Invalid or expired token"},
+            status_code=400
+        )
 
-        user = db.query(User).filter(User.email == email).first()
-        if not user:
-            logger.error(f"User not found for email: {email}")
-            raise HTTPException(status_code=400, detail="Invalid token or email not found")
+    user = db.query(User).filter(User.email == email).first()
+    if not user:
+        return JSONResponse(
+            content={"detail": "User not found"},
+            status_code=404
+        )
 
-        user.is_email_verified = True
-        db.commit()
-        logger.debug(f"Email verified for user: {user.username}")
+    if user.is_email_verified:
+        return JSONResponse(
+            content={"detail": "Email is already verified"},
+            status_code=200
+        )
 
-        otp_secret = user.otp_secret
-        if not otp_secret:
-            otp_secret = generate_otp_secret()
-            user.otp_secret = otp_secret
-            db.commit()
-            logger.debug(f"Generated OTP secret for user: {user.username}")
+    user.is_email_verified = True
+    db.commit()
 
-        qr_code = generate_qr_code(user.username, otp_secret)
-        logger.debug(f"Generated QR code for user: {user.username}")
-        return JSONResponse(content={"qr_code": qr_code})
-    except Exception as e:
-        logger.error(f"Error during email verification: {e}")
-        raise HTTPException(status_code=500, detail="Internal Server Error")
+    return JSONResponse(
+        content={"detail": "Email has been successfully verified"},
+        status_code=200
+    )
 
 @router.post("/verify-otp")
 def verify_otp(otp_code: str, token: str, db: Session = Depends(get_db)):
@@ -217,37 +214,34 @@ def setup_2fa(request: Request, db: Session = Depends(get_db)):
 
     return {"qr_code": qr_code}
 
+# Update the login endpoint to use email in the token
 @router.post("/login", response_model=Token)
-def login(user: UserInWithOTP, db: Session = Depends(get_db)):
-    logger.debug(f"Login attempt for username: {user.username}")
-    db_user = db.query(User).filter(User.username == user.username).first()
+def login(user: UserIn, db: Session = Depends(get_db)):
+    logger.debug(f"Login attempt for email: {user.email}")
+    
+    # Find user by email
+    db_user = db.query(User).filter(User.email == user.email).first()
     if not db_user:
-        logger.error(f"User not found: {user.username}")
+        logger.error(f"User not found with email: {user.email}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid username or password"
+            detail="Invalid email or password"
         )
+    
+    # Verify password
     if not verify_password(user.password, db_user.hashed_password):
-        logger.error(f"Invalid password for user: {user.username}")
+        logger.error(f"Invalid password for email: {user.email}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid username or password"
+            detail="Invalid email or password"
         )
-    
-    # Provjera 2FA koda
-    otp = pyotp.TOTP(db_user.otp_secret)
-    if not otp.verify(user.otp_code):
-        logger.error(f"Invalid 2FA code for user: {user.username}")
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid 2FA code"
-        )
-    
+
+    # Generate JWT token with email as the subject
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
-        data={"sub": db_user.username, "role": db_user.role}, expires_delta=access_token_expires
+        data={"sub": db_user.email, "role": db_user.role}, expires_delta=access_token_expires
     )
-    logger.debug(f"User {user.username} logged in successfully")
+    logger.debug(f"User {user.email} logged in successfully")
     return {"access_token": access_token, "token_type": "bearer"}
 
 # Ruta za dobivanje trenutnog korisnika s više informacija

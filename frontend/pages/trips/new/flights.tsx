@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import AppNavbar from '../../../components/Navbar';
-import { Card, Button, Container } from 'react-bootstrap';
+import { Card, Button, Container, Modal, Carousel } from 'react-bootstrap';
 import flightsData from '../../../data/flightsData.json'; // Import the JSON file
 
 interface Flight {
@@ -12,13 +12,23 @@ interface Flight {
   price: number;
   departure_time: string;
   arrival_time: string;
+  image?: string;
+  images?: string[];
+  bookingLink?: string;
 }
+
+// Helper function to capitalize first letter
+const capitalize = (str: string) => str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
 
 const FlightsPage = () => {
   const router = useRouter();
   const [flights, setFlights] = useState<Flight[]>([]);
   const [selectedFlight, setSelectedFlight] = useState<string>('');
   const [tripDates, setTripDates] = useState<{ startDate: string; endDate: string } | null>(null);
+
+  // Modal state
+  const [showModal, setShowModal] = useState(false);
+  const [modalFlight, setModalFlight] = useState<Flight | null>(null);
 
   useEffect(() => {
     // Store flights data in localStorage
@@ -29,16 +39,10 @@ const FlightsPage = () => {
     const tripDetails = localStorage.getItem('tripDetails');
     if (tripDetails) {
       const { departure, destination, startDate, endDate } = JSON.parse(tripDetails);
-      console.log('Trip Details in Flights:', { departure, destination, startDate, endDate }); // Debugging
-
-      // Save trip dates to state
       setTripDates({ startDate, endDate });
-
-      // Filter flights based on departure and destination
       const filteredFlights = flightsData.filter(
         (flight) => flight.departure === departure && flight.destination === destination
       );
-      console.log('Filtered Flights:', filteredFlights); // Debugging
       setFlights(filteredFlights);
     }
   }, []);
@@ -48,9 +52,18 @@ const FlightsPage = () => {
   };
 
   const handleNext = () => {
-    console.log('Selected Flight:', selectedFlight); // Debugging
-    localStorage.setItem('selectedFlight', selectedFlight); // Save selected flight
-    router.push('/trips/new/transportflight'); // Redirect to TransportFlight page
+    localStorage.setItem('selectedFlight', selectedFlight);
+    router.push('/trips/new/transportflight');
+  };
+
+  const handleShowDetails = (flight: Flight) => {
+    setModalFlight(flight);
+    setShowModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setShowModal(false);
+    setModalFlight(null);
   };
 
   // Helper function to format date and time
@@ -78,6 +91,9 @@ const FlightsPage = () => {
                 }}
                 onClick={() => handleSelect(flight.id)}
               >
+                {flight.image && (
+                  <Card.Img variant="top" src={flight.image} alt={flight.airline} />
+                )}
                 <Card.Body>
                   <Card.Title>{flight.airline}</Card.Title>
                   <Card.Text>Price: ${flight.price}</Card.Text>
@@ -92,8 +108,15 @@ const FlightsPage = () => {
                     </>
                   )}
                   <Card.Text>
-                    Route: {flight.departure} → {flight.destination}
+                    Route: {capitalize(flight.departure)} → {capitalize(flight.destination)}
                   </Card.Text>
+                  <Button
+                    variant="secondary"
+                    onClick={e => { e.stopPropagation(); handleShowDetails(flight); }}
+                    style={{ marginTop: '10px' }}
+                  >
+                    See details
+                  </Button>
                 </Card.Body>
               </Card>
             ))}
@@ -109,6 +132,36 @@ const FlightsPage = () => {
         >
           Next
         </Button>
+
+        {/* Modal za detalje leta */}
+        <Modal show={showModal} onHide={handleCloseModal} centered size="lg">
+          <Modal.Header closeButton>
+            <Modal.Title>
+              {modalFlight?.airline} ({capitalize(modalFlight?.departure || '')} → {capitalize(modalFlight?.destination || '')})
+            </Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            <div style={{ marginTop: 15 }}>
+              <b>Airline:</b> {modalFlight?.airline}<br />
+              <b>Price:</b> ${modalFlight?.price}<br />
+              <b>Departure:</b> {capitalize(modalFlight?.departure || '')} at {modalFlight?.departure_time}<br />
+              <b>Arrival:</b> {capitalize(modalFlight?.destination || '')} at {modalFlight?.arrival_time}<br />
+              <b>Route:</b> {capitalize(modalFlight?.departure || '')} → {capitalize(modalFlight?.destination || '')}<br />
+            </div>
+            {modalFlight?.bookingLink && (
+              <div style={{ margin: '15px 0' }}>
+                <a
+                  href={modalFlight.bookingLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn btn-success"
+                >
+                  Book now
+                </a>
+              </div>
+            )}
+          </Modal.Body>
+        </Modal>
       </Container>
     </>
   );

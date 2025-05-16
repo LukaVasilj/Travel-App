@@ -1,7 +1,25 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import AppNavbar from '../../../components/Navbar';
-import { Container, Card, Button } from 'react-bootstrap';
+import { Container, Card, Button, Modal, Carousel } from 'react-bootstrap';
+
+// Dodaj ovu funkciju na početak!
+function getCookie(name: string) {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop()?.split(';').shift();
+  return '';
+}
+
+// Helper za čišćenje objekata od undefined vrijednosti
+function cleanObject(obj: any) {
+  if (!obj) return obj;
+  return Object.fromEntries(
+    Object.entries(obj)
+      .filter(([_, v]) => v !== undefined)
+      .map(([k, v]) => [k, typeof v === 'object' && v !== null && !Array.isArray(v) ? cleanObject(v) : v])
+  );
+}
 
 interface TransportOption {
   id: string;
@@ -9,8 +27,8 @@ interface TransportOption {
   currLocation?: string;
   departure: string;
   destination?: string;
-  price: number;
-  duration: string;
+  price?: number;
+  duration?: string;
   company?: string;
 }
 
@@ -20,6 +38,11 @@ interface Accommodation {
   type: string;
   price: number;
   image: string;
+  images?: string[];
+  description?: string;
+  reviews?: { user: string; comment: string; rating: number }[];
+  location: string;
+  bookingLink?: string;
 }
 
 interface Flight {
@@ -30,6 +53,9 @@ interface Flight {
   price: number;
   departure_time: string;
   arrival_time: string;
+  image?: string;
+  images?: string[];
+  bookingLink?: string;
 }
 
 const TripSummary = () => {
@@ -39,17 +65,16 @@ const TripSummary = () => {
   const [flight, setFlight] = useState<Flight | null>(null);
   const [totalCost, setTotalCost] = useState<number>(0);
   const [tripDates, setTripDates] = useState<{ startDate: string; endDate: string } | null>(null);
+  const [showAccModal, setShowAccModal] = useState(false);
+  const [showFlightModal, setShowFlightModal] = useState(false);
 
   // Helper function to format date and time
   const formatDateTime = (date: string, time: string) => {
-    console.log('Formatting Date:', date, 'Time:', time); // Debugging
     if (!date || !time) {
-      console.error('Invalid date or time:', { date, time });
       return 'Invalid Date';
     }
     const match = time.match(/(\d+):(\d+)\s(AM|PM)/);
     if (!match) {
-      console.error('Invalid time format:', time);
       return 'Invalid Time Format';
     }
     const [hours, minutes, period] = match.slice(1);
@@ -64,53 +89,26 @@ const TripSummary = () => {
     const tripDetails = localStorage.getItem('tripDetails');
     const selectedAccommodationId = localStorage.getItem('selectedAccommodation');
     const selectedFlightId = localStorage.getItem('selectedFlight');
-    const transportData = localStorage.getItem('transportData'); // For bus transport
-    const transportFlightData = localStorage.getItem('transportFlightData'); // For air transport
     const accommodationData = localStorage.getItem('accommodationData');
     const flightsData = localStorage.getItem('flightsData');
 
-    console.log('Trip Details:', tripDetails);
-    console.log('Selected Accommodation ID:', selectedAccommodationId);
-    console.log('Selected Flight ID:', selectedFlightId);
-
-    if (tripDetails) {
-      const { startDate, endDate, transportType } = JSON.parse(tripDetails);
-      setTripDates({ startDate, endDate });
-      console.log('Start Date:', startDate, 'End Date:', endDate); // Debugging
-
-      // Fetch transport option based on transportType
-      if (transportType === 'road') {
-        const selectedTransportId = localStorage.getItem('transportOption');
-        if (selectedTransportId && transportData) {
-          const parsedTransportData: TransportOption[] = JSON.parse(transportData);
-          const selectedTransport = parsedTransportData.find((option) => option.id === selectedTransportId);
-          if (selectedTransport) {
-            setTransportOption({
-              ...selectedTransport,
-              destination: selectedTransport.destination || selectedTransport.departure, // Ensure destination is not empty
-            });
-          } else {
-            setTransportOption(null);
-          }
-        }
-      } else if (transportType === 'air') {
-        const selectedTransportId = localStorage.getItem('transportOption');
-        if (selectedTransportId && transportFlightData) {
-          const parsedTransportFlightData: TransportOption[] = JSON.parse(transportFlightData);
-          const selectedTransport = parsedTransportFlightData.find((option) => option.id === selectedTransportId);
-          setTransportOption(selectedTransport || null);
-        }
-      }
+    // NOVO: direktno čitaj transportOption objekt iz localStorage
+    const selectedTransportOption = localStorage.getItem('transportOption');
+    if (selectedTransportOption) {
+      setTransportOption(JSON.parse(selectedTransportOption));
     }
 
-    // Fetch accommodation option
+    if (tripDetails) {
+      const { startDate, endDate } = JSON.parse(tripDetails);
+      setTripDates({ startDate, endDate });
+    }
+
     if (selectedAccommodationId && accommodationData) {
       const parsedAccommodationData: Accommodation[] = JSON.parse(accommodationData);
       const selectedAccommodation = parsedAccommodationData.find((a) => a.id === selectedAccommodationId);
       setAccommodation(selectedAccommodation || null);
     }
 
-    // Fetch flight option only if transportType is "air"
     if (tripDetails && JSON.parse(tripDetails).transportType === 'air') {
       if (selectedFlightId && flightsData) {
         const parsedFlightsData: Flight[] = JSON.parse(flightsData);
@@ -118,30 +116,59 @@ const TripSummary = () => {
         setFlight(selectedFlight || null);
       }
     } else {
-      setFlight(null); // Clear flight data if transportType is "road"
+      setFlight(null);
     }
   }, []);
 
   useEffect(() => {
-    // Calculate total cost
     const transportCost = transportOption?.price || 0;
     const accommodationCost = accommodation?.price || 0;
     const flightCost = flight?.price || 0;
-
     setTotalCost(transportCost + accommodationCost + flightCost);
   }, [transportOption, accommodation, flight]);
 
-  const handleFinalize = () => {
-    alert('Trip finalized! Enjoy your journey!');
+  const handleFinalize = async () => {
+    await fetch('http://localhost:8000/api/csrf-token', { credentials: 'include' }); // osiguraj cookie
+    const csrfToken = getCookie('fastapi-csrf-token');
+    const tripDetails = JSON.parse(localStorage.getItem('tripDetails') || '{}');
+    const payload = {
+      name: tripDetails.name || 'My Trip',
+      start_date: tripDetails.startDate,
+      end_date: tripDetails.endDate,
+      transport_type: tripDetails.transportType,
+      transport_option: transportOption ? cleanObject(transportOption) : {}, // uvijek šalji dict
+      accommodation: accommodation ? cleanObject(accommodation) : null,
+      flight: flight ? cleanObject(flight) : null,
+      total_cost: Number(totalCost),
+    };
 
-    // Clear only trip-related data from localStorage
-    localStorage.removeItem('transportOption');
-    localStorage.removeItem('selectedAccommodation');
-    localStorage.removeItem('selectedFlight');
-    localStorage.removeItem('tripDetails');
+    try {
+      const token = localStorage.getItem('access_token');
+      const response = await fetch('http://localhost:8000/api/trips/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+          'X-CSRF-Token': csrfToken || '',
+        },
+        body: JSON.stringify(payload),
+        credentials: 'include'
+      });
 
-    // Redirect user to the main page
-    router.push('/glavnastranica');
+      if (response.ok) {
+        alert('Trip finalized and saved! Enjoy your journey!');
+        localStorage.removeItem('transportOption');
+        localStorage.removeItem('selectedAccommodation');
+        localStorage.removeItem('selectedFlight');
+        localStorage.removeItem('tripDetails');
+        router.push('/glavnastranica');
+      } else {
+        const error = await response.json();
+        alert('Failed to save trip: ' + JSON.stringify(error));
+      }
+    } catch (err) {
+      alert('Error saving trip.');
+    }
   };
 
   return (
@@ -151,73 +178,181 @@ const TripSummary = () => {
         <h1>Trip Summary</h1>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginTop: '20px' }}>
           {transportOption && (
-  <Card>
-    <Card.Body>
-      <Card.Title>Transport</Card.Title>
-      {tripDates?.startDate && (
-        <>
-          {tripDates.startDate && JSON.parse(localStorage.getItem('tripDetails') || '{}').transportType === 'air' ? (
-            <>
-              <Card.Text>Name: {transportOption.name || 'N/A'}</Card.Text>
-            </>
-          ) : (
-            <>
-              <Card.Text>Company: {transportOption.company || 'N/A'}</Card.Text>
-            </>
-          )}
-        </>
-      )}
-      {transportOption.name === 'Rent-a-Car' ? (
-        <Card.Text>Price: ${transportOption.price} per day</Card.Text>
-      ) : (
-        <>
-          <Card.Text>Price: ${transportOption.price}</Card.Text>
-          {tripDates && (
-            <>
-              <Card.Text>
-                Departure Date: {formatDateTime(tripDates.startDate, transportOption.departure_time)}
-              </Card.Text>
-              <Card.Text>
-                Arrival Date: {formatDateTime(tripDates.startDate, transportOption.arrival_time)}
-              </Card.Text>
-            </>
-          )}
-          <Card.Text>
-            Route: {transportOption.departure} → {transportOption.destination || transportOption.departure}
-          </Card.Text>
-        </>
-      )}
-    </Card.Body>
-  </Card>
-)} 
-          {flight && tripDates && (
             <Card>
               <Card.Body>
-                <Card.Title>Flight</Card.Title>
-                <Card.Text>Airline: {flight.airline}</Card.Text>
-                <Card.Text>Price: ${flight.price}</Card.Text>
-                <Card.Text>
-                  Departure Date: {formatDateTime(tripDates.startDate, flight.departure_time)}
-                </Card.Text>
-                <Card.Text>
-                  Arrival Date: {formatDateTime(tripDates.startDate, flight.arrival_time)}
-                </Card.Text>
-                <Card.Text>
-                  Route: {flight.departure} → {flight.destination}
-                </Card.Text>
+                <Card.Title>Transport</Card.Title>
+                {tripDates?.startDate && (
+                  <>
+                    {tripDates.startDate && JSON.parse(localStorage.getItem('tripDetails') || '{}').transportType === 'air' ? (
+                      <Card.Text>Name: {transportOption.name || 'N/A'}</Card.Text>
+                    ) : (
+                      <Card.Text>Company: {transportOption.company || 'N/A'}</Card.Text>
+                    )}
+                  </>
+                )}
+                {transportOption.name === 'Rent-a-Car' ? (
+                  <Card.Text>Price: ${transportOption.price} per day</Card.Text>
+                ) : (
+                  <>
+                    <Card.Text>Price: ${transportOption.price}</Card.Text>
+                    {/* Prikaži datume i rutu samo ako NIJE "Already have a ride to airport" */}
+                    {transportOption.id !== 'default' && tripDates && (
+                      <>
+                        <Card.Text>
+                          Departure Date: {formatDateTime(tripDates.startDate, (transportOption as any).departure_time)}
+                        </Card.Text>
+                        <Card.Text>
+                          Arrival Date: {formatDateTime(tripDates.startDate, (transportOption as any).arrival_time)}
+                        </Card.Text>
+                        <Card.Text>
+                          Route: {transportOption.departure} → {transportOption.destination || transportOption.departure}
+                        </Card.Text>
+                      </>
+                    )}
+                  </>
+                )}
               </Card.Body>
             </Card>
-          )} 
+          )}
+          {flight && tripDates && (
+            <>
+              <Card>
+                <Card.Body>
+                  <Card.Title>Flight</Card.Title>
+                  <Card.Text>Airline: {flight.airline}</Card.Text>
+                  <Card.Text>Price: ${flight.price}</Card.Text>
+                  <Card.Text>
+                    Departure Date: {formatDateTime(tripDates.startDate, flight.departure_time)}
+                  </Card.Text>
+                  <Card.Text>
+                    Arrival Date: {formatDateTime(tripDates.startDate, flight.arrival_time)}
+                  </Card.Text>
+                  <Card.Text>
+                    Route: {flight.departure} → {flight.destination}
+                  </Card.Text>
+                  <Button
+                    variant="secondary"
+                    onClick={() => setShowFlightModal(true)}
+                    style={{ marginTop: '10px' }}
+                  >
+                    See details
+                  </Button>
+                </Card.Body>
+              </Card>
+              <Modal show={showFlightModal} onHide={() => setShowFlightModal(false)} centered size="lg">
+                <Modal.Header closeButton>
+                  <Modal.Title>
+                    {flight.airline} ({flight.departure} → {flight.destination})
+                  </Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                  {flight.images && flight.images.length > 0 && (
+                    <Carousel>
+                      {flight.images.map((img, idx) => (
+                        <Carousel.Item key={idx}>
+                          <img
+                            className="d-block w-100"
+                            src={img}
+                            alt={`Slide ${idx + 1}`}
+                            style={{ maxHeight: 350, objectFit: 'cover' }}
+                          />
+                        </Carousel.Item>
+                      ))}
+                    </Carousel>
+                  )}
+                  <div style={{ marginTop: 15 }}>
+                    <b>Airline:</b> {flight.airline}<br />
+                    <b>Price:</b> ${flight.price}<br />
+                    <b>Departure:</b> {flight.departure} at {flight.departure_time}<br />
+                    <b>Arrival:</b> {flight.destination} at {flight.arrival_time}<br />
+                    <b>Route:</b> {flight.departure} → {flight.destination}<br />
+                  </div>
+                  {flight.bookingLink && (
+                    <div style={{ margin: '15px 0' }}>
+                      <a
+                        href={flight.bookingLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn btn-success"
+                      >
+                        Book now
+                      </a>
+                    </div>
+                  )}
+                </Modal.Body>
+              </Modal>
+            </>
+          )}
           {accommodation && (
-  <Card>
-    <Card.Body>
-      <Card.Title>Accommodation</Card.Title>
-      <Card.Text>Name: {accommodation.name}</Card.Text>
-      <Card.Text>Type: {accommodation.type}</Card.Text>
-      <Card.Text>Price: ${accommodation.price}</Card.Text>
-    </Card.Body>
-  </Card>
-)}
+            <>
+              <Card>
+                <Card.Body>
+                  <Card.Title>Accommodation</Card.Title>
+                  <Card.Text>Name: {accommodation.name}</Card.Text>
+                  <Card.Text>Type: {accommodation.type}</Card.Text>
+                  <Card.Text>Price: ${accommodation.price}</Card.Text>
+                  <Button
+                    variant="secondary"
+                    onClick={() => setShowAccModal(true)}
+                    style={{ marginTop: '10px' }}
+                  >
+                    See details
+                  </Button>
+                </Card.Body>
+              </Card>
+              <Modal show={showAccModal} onHide={() => setShowAccModal(false)} centered size="lg">
+                <Modal.Header closeButton>
+                  <Modal.Title>{accommodation.name}</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                  {accommodation.images && accommodation.images.length > 0 && (
+                    <Carousel>
+                      {accommodation.images.map((img, idx) => (
+                        <Carousel.Item key={idx}>
+                          <img
+                            className="d-block w-100"
+                            src={img}
+                            alt={`Slide ${idx + 1}`}
+                            style={{ maxHeight: 350, objectFit: 'cover' }}
+                          />
+                        </Carousel.Item>
+                      ))}
+                    </Carousel>
+                  )}
+                  <div style={{ marginTop: 15 }}>
+                    <b>Type:</b> {accommodation.type}<br />
+                    <b>Price:</b> ${accommodation.price} <br />
+                    <b>Location:</b> {accommodation.location}<br />
+                    <b>Description:</b> {accommodation.description || 'No description.'}<br />
+                    {accommodation.reviews && accommodation.reviews.length > 0 && (
+                      <>
+                        <b>Reviews:</b>
+                        <ul>
+                          {accommodation.reviews.map((rev, idx) => (
+                            <li key={idx}>
+                              <b>{rev.user}</b> ({rev.rating}/5): {rev.comment}
+                            </li>
+                          ))}
+                        </ul>
+                      </>
+                    )}
+                  </div>
+                  {accommodation.bookingLink && (
+                    <div style={{ margin: '15px 0' }}>
+                      <a
+                        href={accommodation.bookingLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn btn-success"
+                      >
+                        Book now
+                      </a>
+                    </div>
+                  )}
+                </Modal.Body>
+              </Modal>
+            </>
+          )}
         </div>
         <h3 style={{ marginTop: '20px' }}>Total Cost: ${totalCost}</h3>
         <Button variant="success" onClick={handleFinalize} style={{ marginTop: '20px' }}>

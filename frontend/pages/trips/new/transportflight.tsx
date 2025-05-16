@@ -66,10 +66,12 @@ const TransportFlight = () => {
   };
 
   const handleNext = () => {
-    console.log('Selected Transport to Airport:', selectedOption); // Debugging
-    localStorage.setItem('transportOption', selectedOption); // Save selected transport to airport
-    router.push('/trips/new/accommodation'); // Redirect to Accommodation page
-  };
+  const selectedObj = transportOptions.find(opt => opt.id === selectedOption);
+  if (selectedObj) {
+    localStorage.setItem('transportOption', JSON.stringify(selectedObj)); // Spremi cijeli objekt!
+  }
+  router.push('/trips/new/accommodation');
+};
 
   // Helper function to format date and time
   const formatDateTime = (date: string, time: string) => {

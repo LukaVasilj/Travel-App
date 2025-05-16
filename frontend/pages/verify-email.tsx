@@ -13,24 +13,31 @@ const VerifyEmail = () => {
     if (token) {
       console.log(`Token received: ${token}`);
       const verifyEmail = async () => {
-        try {
-          const response = await fetch(`http://localhost:8000/api/auth/verify-email?token=${token}`);
-          const data = await response.json();
-          console.log('Response data:', data);
-          if (response.ok) {
-            setQrCode(data.qr_code);
-            setIsEmailVerified(true);
-            console.log('QR Code set:', data.qr_code);
-          } else {
-            setError(data.detail || 'Verification failed');
-            console.error('Verification failed:', data.detail);
-          }
-        } catch (err) {
-          console.error('Error verifying email:', err);
-          setError('An error occurred while verifying your email');
-        }
-      };
+  try {
+    const response = await fetch(`http://localhost:8000/api/auth/verify-email?token=${token}`);
+    
+    // Check if the response is JSON
+    const contentType = response.headers.get("content-type");
+    if (!contentType || !contentType.includes("application/json")) {
+      throw new Error("Invalid response format");
+    }
 
+    const data = await response.json();
+    console.log('Response data:', data);
+
+    if (response.ok) {
+      setQrCode(data.qr_code);
+      setIsEmailVerified(true);
+      console.log('QR Code set:', data.qr_code);
+    } else {
+      setError(data.detail || 'Verification failed');
+      console.error('Verification failed:', data.detail);
+    }
+  } catch (err) {
+    console.error('Error verifying email:', err);
+    setError('An error occurred while verifying your email');
+  }
+};
       verifyEmail();
     }
   }, [token]);

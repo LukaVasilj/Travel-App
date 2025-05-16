@@ -49,6 +49,18 @@ const CreateTrip = () => {
     }
   };
 
+  // Validacija forme
+  const isFormValid = () => {
+    const { name, startDate, endDate, departure, destination, transportType, currLocation } = tripDetails;
+    if (!name || !startDate || !endDate || !departure || !destination || !transportType) {
+      return false;
+    }
+    if (transportType === "air" && !currLocation) {
+      return false;
+    }
+    return true;
+  };
+
   return (
     <>
       <AppNavbar />
@@ -125,7 +137,12 @@ const CreateTrip = () => {
               isDisabled={tripDetails.transportType !== 'air'} // Disable unless "air" is selected
             />
           </Form.Group>
-          <Button variant="primary" onClick={handleNext} style={{ marginTop: '20px' }}>
+          <Button
+            variant="primary"
+            onClick={handleNext}
+            style={{ marginTop: '20px' }}
+            disabled={!isFormValid()}
+          >
             Next
           </Button>
         </Form>

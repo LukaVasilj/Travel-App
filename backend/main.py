@@ -7,6 +7,8 @@ from starlette.responses import JSONResponse
 
 from routers import auth  # Ensure your auth router is imported correctly
 from routers import friends
+from routers import trips
+
 
 # Define CSRF configuration
 class CsrfSettings(BaseModel):
@@ -38,6 +40,7 @@ def get_csrf_config():
 # Include the auth router
 app.include_router(auth.router, prefix="/api/auth")
 app.include_router(friends.router, prefix="/api/friends", tags=["friends"])
+app.include_router(trips.router, prefix="/api", tags=["trips"])
 
 # CSRF token endpoint: generate token and set it in a cookie manually
 @app.get("/api/csrf-token")
@@ -54,9 +57,9 @@ def get_csrf_token(response: Response, csrf_protect: CsrfProtect = Depends()):
     json_response.set_cookie(
         key="fastapi-csrf-token",
         value=csrf_token,
-        httponly=True,
-        samesite="lax",
-        domain="localhost"  # Explicitly set the domain if needed
+        httponly=False,
+        samesite="lax"
+        
     )
     
     return json_response

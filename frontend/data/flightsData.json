@@ -1,38 +1,46 @@
 [
   {
     "id": "flight1",
-    "airline": "Airline A",
+    "airline": "KLM",
     "departure": "split",
     "destination": "berlin",
     "price": 200,
     "departure_time": "10:00 AM",
-    "arrival_time": "12:30 PM"
+    "arrival_time": "12:30 PM",
+    "image": "/images/klm.png",
+    "bookingLink": "https://www.skyscanner.net/transport/flights/split/berlin"
   },
   {
     "id": "flight2",
-    "airline": "Airline B",
-    "departure": "zagreb",
+    "airline": "KLM",
+    "departure": "split",
     "destination": "berlin",
     "price": 180,
     "departure_time": "1:00 PM",
-    "arrival_time": "3:30 PM"
+    "arrival_time": "3:30 PM",
+    "image": "/images/klm.png",
+    "bookingLink": "https://www.skyscanner.net/transport/flights/zagreb/berlin"
   },
   {
     "id": "flight3",
-    "airline": "Airline C",
+    "airline": "Air France",
     "departure": "split",
-    "destination": "paris",
+    "destination": "berlin",
     "price": 250,
     "departure_time": "6:00 AM",
-    "arrival_time": "9:00 AM"
+    "arrival_time": "9:00 AM",
+    "image": "/images/s.jpg",
+    "bookingLink": "https://www.skyscanner.net/transport/flights/split/paris"
   },
   {
     "id": "flight4",
-    "airline": "Airline D",
+    "airline": "Turkish Airlines",
     "departure": "split",
     "destination": "berlin",
     "price": 220,
     "departure_time": "4:00 PM",
-    "arrival_time": "6:30 PM"
+    "arrival_time": "6:30 PM",
+    "image": "/images/tur.png",
+    "bookingLink": "https://www.skyscanner.net/transport/flights/split/berlin"
   }
 ]

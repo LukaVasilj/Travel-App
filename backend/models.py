@@ -1,5 +1,6 @@
-from sqlalchemy import Column, Integer, String, DateTime, Boolean, ForeignKey, Enum
+from sqlalchemy import Column, Integer, String, DateTime, Boolean, ForeignKey, Enum , Float
 from sqlalchemy.orm import relationship
+from sqlalchemy.dialects.postgresql import JSON  # <-- Dodaj ovo!
 from database import Base
 import datetime
 import enum
@@ -31,6 +32,11 @@ class User(Base):
         back_populates="user",
         cascade="all, delete-orphan"
     )
+    trips = relationship(
+        "Trip",
+        back_populates="user",
+        cascade="all, delete-orphan"
+    )
 
 class Friend(Base):
     __tablename__ = "friends"
@@ -47,3 +53,17 @@ class Friend(Base):
         foreign_keys=[user_id],
         back_populates="friends",
     )
+    
+class Trip(Base):
+    __tablename__ = "trips"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    name = Column(String)
+    start_date = Column(String)
+    end_date = Column(String)
+    transport_type = Column(String)
+    transport_option = Column(JSON)
+    accommodation = Column(JSON, nullable=True)
+    flight = Column(JSON, nullable=True)
+    total_cost = Column(Float, nullable=False)
+    user = relationship("User", back_populates="trips")

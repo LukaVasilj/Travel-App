@@ -2,22 +2,21 @@ import AppNavbar from '../components/Navbar';
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useRouter } from 'next/router';
-import { Container, Form, Button } from 'react-bootstrap';
+import { Container, Form, Button, Alert } from 'react-bootstrap';
 import { signIn } from 'next-auth/react';
 
 const Login = () => {
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [otpCode, setOtpCode] = useState('');
   const [csrfToken, setCsrfToken] = useState('');
+  const [message, setMessage] = useState('');
+  const [error, setError] = useState(''); // Dodano stanje za greške
   const router = useRouter();
 
-  // Function to fetch CSRF token from the backend
   const fetchCsrfToken = async () => {
     try {
       const response = await fetch('http://localhost:8000/api/csrf-token', { credentials: 'include' });
       const data = await response.json();
-      // If the token is returned as an array, extract the first element; otherwise, use it directly.
       const token = Array.isArray(data.csrf_token) ? data.csrf_token[0] : data.csrf_token;
       return token;
     } catch (error) {
@@ -39,9 +38,23 @@ const Login = () => {
     loadCsrfToken();
   }, []);
 
+  useEffect(() => {
+    if (router.query.message) {
+      setMessage(router.query.message as string);
+    }
+  }, [router.query]);
+
   const handleLogin = async () => {
-    if (!csrfToken) {
-      console.error("CSRF token is missing, cannot proceed with login");
+    setError(''); // Resetovanje greške
+
+    // Validacija unosa
+    if (!email || !password) {
+      setError('Email and password are required.');
+      return;
+    }
+
+    if (!/\S+@\S+\.\S+/.test(email)) {
+      setError('Please enter a valid email address.');
       return;
     }
 
@@ -49,7 +62,7 @@ const Login = () => {
       console.log("Logging in user with CSRF token:", csrfToken);
       const response = await axios.post(
         'http://localhost:8000/api/auth/login',
-        { username, password, otp_code: otpCode },
+        { email, password },
         {
           headers: { 
             'X-CSRF-Token': csrfToken, 
@@ -59,9 +72,9 @@ const Login = () => {
         }
       );
       console.log("Login successful:", response.data);
-      // Store the JWT token in localStorage
+
       localStorage.setItem('access_token', response.data.access_token);
-      // Fetch user role
+
       const userResponse = await axios.get('http://localhost:8000/api/auth/me', {
         headers: {
           'Authorization': `Bearer ${response.data.access_token}`
@@ -69,7 +82,7 @@ const Login = () => {
         withCredentials: true
       });
       const userRole = userResponse.data.role;
-      // Redirect based on user role
+
       if (userRole === 'admin') {
         router.push('/dashboard');
       } else {
@@ -78,40 +91,50 @@ const Login = () => {
     } catch (error) {
       console.error("Error during login:", error);
       if (axios.isAxiosError(error) && error.response) {
-        alert(error.response.data.detail || 'Login failed');
+        setError(error.response.data.detail || 'Invalid email or password.');
       } else {
-        alert('Login failed');
+        setError('An unexpected error occurred. Please try again.');
       }
     }
   };
 
   return (
     <>
-
-    <AppNavbar />
-
-    <Container>
-      <h1>Login</h1>
-      <Form>
-        <Form.Group controlId="formUsername">
-          <Form.Label>Username</Form.Label>
-          <Form.Control type="text" placeholder="Enter username" value={username} onChange={(e) => setUsername(e.target.value)} />
-        </Form.Group>
-        <Form.Group controlId="formPassword">
-          <Form.Label>Password</Form.Label>
-          <Form.Control type="password" placeholder="Enter password" value={password} onChange={(e) => setPassword(e.target.value)} />
-        </Form.Group>
-        <Form.Group controlId="formOtpCode">
-          <Form.Label>2FA Code</Form.Label>
-          <Form.Control type="text" placeholder="Enter 2FA code" value={otpCode} onChange={(e) => setOtpCode(e.target.value)} />
-        </Form.Group>
-        <Button variant="primary" onClick={handleLogin}>Login</Button>
-      </Form>
-      <Button variant="secondary" onClick={() => signIn('google', { callbackUrl: '/' })}>
-  Login with Google
-</Button>
-
-    </Container>
+      <AppNavbar />
+      <Container>
+        <h1>Login</h1>
+        {message && (
+          <Alert variant="success">
+            {message === 'verified' && 'Your email has been successfully verified. You can now log in.'}
+            {message === 'already_verified' && 'Your email is already verified. Please log in.'}
+          </Alert>
+        )}
+        {error && <Alert variant="danger">{error}</Alert>} {/* Prikaz greške */}
+        <Form>
+          <Form.Group controlId="formEmail">
+            <Form.Label>Email</Form.Label>
+            <Form.Control
+              type="email"
+              placeholder="Enter email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </Form.Group>
+          <Form.Group controlId="formPassword">
+            <Form.Label>Password</Form.Label>
+            <Form.Control
+              type="password"
+              placeholder="Enter password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </Form.Group>
+          <Button variant="primary" onClick={handleLogin}>Login</Button>
+        </Form>
+        <Button variant="secondary" onClick={() => signIn('google', { callbackUrl: '/' })}>
+          Login with Google
+        </Button>
+      </Container>
     </>
   );
 };
