@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import AppNavbar from '../components/Navbar';
-import { Container, Card, Spinner, Button } from 'react-bootstrap';
+import { Container, Card, Spinner, Button, Modal, Carousel } from 'react-bootstrap';
 
 interface Trip {
   id: number;
@@ -14,12 +14,21 @@ interface Trip {
   total_cost: number;
 }
 
+// Helper za veliko prvo slovo
+const capitalize = (str: string) =>
+  str && typeof str === 'string'
+    ? str.charAt(0).toUpperCase() + str.slice(1).toLowerCase()
+    : '';
+
 const MyTrips = () => {
   const [trips, setTrips] = useState<Trip[]>([]);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState<{ [key: number]: boolean }>({});
   const [flightExpanded, setFlightExpanded] = useState<{ [key: number]: boolean }>({});
   const [accommodationExpanded, setAccommodationExpanded] = useState<{ [key: number]: boolean }>({});
+  const [showImagesModal, setShowImagesModal] = useState(false);
+  const [modalImages, setModalImages] = useState<string[]>([]);
+  const [modalAccName, setModalAccName] = useState<string>('');
 
   useEffect(() => {
     const fetchTrips = async () => {
@@ -49,6 +58,18 @@ const MyTrips = () => {
 
   const toggleAccommodationExpand = (tripId: number) => {
     setAccommodationExpanded(prev => ({ ...prev, [tripId]: !prev[tripId] }));
+  };
+
+  const handleShowImages = (images: string[], accName: string) => {
+    setModalImages(images);
+    setModalAccName(accName);
+    setShowImagesModal(true);
+  };
+
+  const handleCloseImagesModal = () => {
+    setShowImagesModal(false);
+    setModalImages([]);
+    setModalAccName('');
   };
 
   return (
@@ -100,7 +121,6 @@ const MyTrips = () => {
                 )}
                   {trip.transport_option && expanded[trip.id] && (
                     <div style={{ marginTop: '10px', marginLeft: '10px' }}>
-                      
                       {trip.transport_option.departure_time && (
                         <div>
                           <b>Departure Time:</b> {trip.transport_option.departure_time}
@@ -110,9 +130,10 @@ const MyTrips = () => {
                         <div>
                           <b>Arrival Time:</b> {trip.transport_option.arrival_time}
                         </div>
-                      )}{trip.transport_option.currLocation && trip.transport_option.departure && (
+                      )}
+                      {trip.transport_option.currLocation && trip.transport_option.departure && (
                         <div>
-                          <b>Route:</b> {trip.transport_option.currLocation} &rarr; {trip.transport_option.departure}
+                          <b>Route:</b> {capitalize(trip.transport_option.currLocation)} &rarr; {capitalize(trip.transport_option.departure)}
                         </div>
                       )}
                     </div>
@@ -141,6 +162,33 @@ const MyTrips = () => {
                               <b>Description:</b> {trip.accommodation.description}
                             </div>
                           )}
+                          {/* Prikaz buttona za slike */}
+                          {(
+                            (trip.accommodation.images && trip.accommodation.images.length > 0) ||
+                            trip.accommodation.image
+                          ) && (
+                            <div style={{ margin: '10px 0' }}>
+                              <b>Pictures:</b>{' '}
+                              <Button
+                                variant="outline-primary"
+                                size="sm"
+                                onClick={() => {
+                                  // Pripremi niz slika: glavna + ostale (bez duplikata)
+                                  let imgs: string[] = [];
+                                  if (trip.accommodation.image) imgs.push(trip.accommodation.image);
+                                  if (trip.accommodation.images && Array.isArray(trip.accommodation.images)) {
+                                    trip.accommodation.images.forEach((img: string) => {
+                                      if (img !== trip.accommodation.image) imgs.push(img);
+                                    });
+                                  }
+                                  handleShowImages(imgs, trip.accommodation.name);
+                                }}
+                                style={{ marginLeft: 8 }}
+                              >
+                                Show pictures
+                              </Button>
+                            </div>
+                          )}
                           {trip.accommodation.bookingLink && (
                             <div>
                               <b>Booking Link:</b> <a href={trip.accommodation.bookingLink} target="_blank" rel="noopener noreferrer">{trip.accommodation.bookingLink}</a>
@@ -167,7 +215,7 @@ const MyTrips = () => {
                         <div style={{ marginTop: '10px', marginLeft: '10px' }}>
                           {trip.flight.departure && trip.flight.destination && (
                             <div>
-                              <b>Route:</b> {trip.flight.departure} &rarr; {trip.flight.destination}
+                              <b>Route:</b> {capitalize(trip.flight.departure)} &rarr; {capitalize(trip.flight.destination)}
                             </div>
                           )}
                           {trip.flight.departure_time && (
@@ -198,6 +246,30 @@ const MyTrips = () => {
           ))
         )}
       </Container>
+      {/* Modal za slike smještaja */}
+      <Modal show={showImagesModal} onHide={handleCloseImagesModal} centered size="lg">
+        <Modal.Header closeButton>
+          <Modal.Title>Pictures: {modalAccName}</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {modalImages.length > 0 ? (
+            <Carousel>
+              {modalImages.map((img, idx) => (
+                <Carousel.Item key={idx}>
+                  <img
+                    className="d-block w-100"
+                    src={img}
+                    alt={`Accommodation ${idx + 1}`}
+                    style={{ maxHeight: 400, objectFit: 'cover' }}
+                  />
+                </Carousel.Item>
+              ))}
+            </Carousel>
+          ) : (
+            <p>No pictures available.</p>
+          )}
+        </Modal.Body>
+      </Modal>
     </>
   );
 };

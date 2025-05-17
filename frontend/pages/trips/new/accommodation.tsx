@@ -18,6 +18,12 @@ interface Accommodation {
   bookingLink?: string;
 }
 
+// Helper za veliko prvo slovo
+const capitalize = (str: string) =>
+  str && typeof str === 'string'
+    ? str.charAt(0).toUpperCase() + str.slice(1).toLowerCase()
+    : '';
+
 const AccommodationPage = () => {
   const router = useRouter();
   const [accommodations, setAccommodations] = useState<Accommodation[]>([]);
@@ -106,7 +112,7 @@ const AccommodationPage = () => {
               <Card.Img variant="top" src={acc.image} alt={acc.name} />
               <Card.Body>
                 <Card.Title>{acc.name}</Card.Title>
-                <Card.Text>Type: {acc.type}</Card.Text>
+                <Card.Text>Type: {capitalize(acc.type)}</Card.Text>
                 <Card.Text>Price: ${acc.price} </Card.Text>
                 <Button
                   variant="secondary"
@@ -144,7 +150,7 @@ const AccommodationPage = () => {
               </Carousel>
             )}
             <div style={{ marginTop: 15 }}>
-              <b>Type:</b> {modalAcc?.type}<br />
+              <b>Type:</b> {modalAcc?.type ? capitalize(modalAcc.type) : ''}<br />
               <b>Price:</b> ${modalAcc?.price} <br />
               <b>Location:</b> {modalAcc?.location}<br />
               <b>Description:</b> {modalAcc?.description || 'No description.'}<br />

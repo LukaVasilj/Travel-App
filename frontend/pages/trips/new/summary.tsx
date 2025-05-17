@@ -21,6 +21,12 @@ function cleanObject(obj: any) {
   );
 }
 
+// Helper za veliko prvo slovo
+const capitalize = (str: string) =>
+  str && typeof str === 'string'
+    ? str.charAt(0).toUpperCase() + str.slice(1).toLowerCase()
+    : '';
+
 interface TransportOption {
   id: string;
   name?: string;
@@ -30,6 +36,8 @@ interface TransportOption {
   price?: number;
   duration?: string;
   company?: string;
+  image?: string;
+  bookingLink?: string;
 }
 
 interface Accommodation {
@@ -67,6 +75,7 @@ const TripSummary = () => {
   const [tripDates, setTripDates] = useState<{ startDate: string; endDate: string } | null>(null);
   const [showAccModal, setShowAccModal] = useState(false);
   const [showFlightModal, setShowFlightModal] = useState(false);
+  const [showTransportModal, setShowTransportModal] = useState(false);
 
   // Helper function to format date and time
   const formatDateTime = (date: string, time: string) => {
@@ -82,6 +91,13 @@ const TripSummary = () => {
     dateObj.setHours(period === 'PM' && parseInt(hours) !== 12 ? parseInt(hours) + 12 : parseInt(hours));
     dateObj.setMinutes(parseInt(minutes));
     return dateObj.toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' });
+  };
+
+  // Helper za formatiranje rute s velikim slovom
+  const formatRoute = (departure: string, destination?: string) => {
+    if (!departure) return '';
+    if (!destination) return capitalize(departure);
+    return `${capitalize(departure)} → ${capitalize(destination)}`;
   };
 
   useEffect(() => {
@@ -178,41 +194,90 @@ const TripSummary = () => {
         <h1>Trip Summary</h1>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginTop: '20px' }}>
           {transportOption && (
-            <Card>
-              <Card.Body>
-                <Card.Title>Transport</Card.Title>
-                {tripDates?.startDate && (
-                  <>
-                    {tripDates.startDate && JSON.parse(localStorage.getItem('tripDetails') || '{}').transportType === 'air' ? (
-                      <Card.Text>Name: {transportOption.name || 'N/A'}</Card.Text>
-                    ) : (
-                      <Card.Text>Company: {transportOption.company || 'N/A'}</Card.Text>
+            <>
+              <Card>
+                <Card.Body>
+                  <Card.Title>Transport</Card.Title>
+                  {tripDates?.startDate && (
+                    <>
+                      {tripDates.startDate && JSON.parse(localStorage.getItem('tripDetails') || '{}').transportType === 'air' ? (
+                        <Card.Text>Name: {transportOption.name || 'N/A'}</Card.Text>
+                      ) : (
+                        <Card.Text>Company: {transportOption.company || 'N/A'}</Card.Text>
+                      )}
+                    </>
+                  )}
+                  {transportOption.name === 'Rent-a-Car' ? (
+                    <Card.Text>Price: ${transportOption.price} per day</Card.Text>
+                  ) : (
+                    <>
+                      <Card.Text>Price: ${transportOption.price}</Card.Text>
+                      {/* Prikaži datume i rutu samo ako NIJE "Already have a ride to airport" */}
+                      {transportOption.id !== 'default' && tripDates && (
+                        <>
+                          <Card.Text>
+                            Departure Date: {formatDateTime(tripDates.startDate, (transportOption as any).departure_time)}
+                          </Card.Text>
+                          <Card.Text>
+                            Arrival Date: {formatDateTime(tripDates.startDate, (transportOption as any).arrival_time)}
+                          </Card.Text>
+                          <Card.Text>
+                            Route: {formatRoute(transportOption.departure, transportOption.destination || transportOption.departure)}
+                          </Card.Text>
+                        </>
+                      )}
+                    </>
+                  )}
+                  <Button
+                    variant="secondary"
+                    onClick={() => setShowTransportModal(true)}
+                    style={{ marginTop: '10px' }}
+                  >
+                    See details
+                  </Button>
+                </Card.Body>
+              </Card>
+              <Modal show={showTransportModal} onHide={() => setShowTransportModal(false)} centered size="lg">
+                <Modal.Header closeButton>
+                  <Modal.Title>
+                    {transportOption.name}
+                    {transportOption.currLocation && transportOption.departure &&
+                      <> ({formatRoute(transportOption.currLocation, transportOption.departure)})</>
+                    }
+                  </Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                  {transportOption.image && (
+                    <img
+                      src={transportOption.image}
+                      alt={transportOption.name}
+                      style={{ width: '100%', maxHeight: 300, objectFit: 'contain', marginBottom: 20 }}
+                    />
+                  )}
+                  <div style={{ marginTop: 15 }}>
+                    <b>Name:</b> {transportOption.name}<br />
+                    {typeof transportOption.price !== 'undefined' && <><b>Price:</b> ${transportOption.price}<br /></>}
+                    {transportOption.currLocation && <><b>Departure:</b> {capitalize(transportOption.currLocation)} at {(transportOption as any).departure_time}<br /></>}
+                    {transportOption.departure && <><b>Arrival:</b> {capitalize(transportOption.departure)} at {(transportOption as any).arrival_time}<br /></>}
+                    {transportOption.currLocation && transportOption.departure && (
+                      <><b>Route:</b> {formatRoute(transportOption.currLocation, transportOption.departure)}<br /></>
                     )}
-                  </>
-                )}
-                {transportOption.name === 'Rent-a-Car' ? (
-                  <Card.Text>Price: ${transportOption.price} per day</Card.Text>
-                ) : (
-                  <>
-                    <Card.Text>Price: ${transportOption.price}</Card.Text>
-                    {/* Prikaži datume i rutu samo ako NIJE "Already have a ride to airport" */}
-                    {transportOption.id !== 'default' && tripDates && (
-                      <>
-                        <Card.Text>
-                          Departure Date: {formatDateTime(tripDates.startDate, (transportOption as any).departure_time)}
-                        </Card.Text>
-                        <Card.Text>
-                          Arrival Date: {formatDateTime(tripDates.startDate, (transportOption as any).arrival_time)}
-                        </Card.Text>
-                        <Card.Text>
-                          Route: {transportOption.departure} → {transportOption.destination || transportOption.departure}
-                        </Card.Text>
-                      </>
-                    )}
-                  </>
-                )}
-              </Card.Body>
-            </Card>
+                  </div>
+                  {transportOption.bookingLink && (
+                    <div style={{ margin: '15px 0' }}>
+                      <a
+                        href={transportOption.bookingLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn btn-success"
+                      >
+                        Book now
+                      </a>
+                    </div>
+                  )}
+                </Modal.Body>
+              </Modal>
+            </>
           )}
           {flight && tripDates && (
             <>
@@ -228,7 +293,7 @@ const TripSummary = () => {
                     Arrival Date: {formatDateTime(tripDates.startDate, flight.arrival_time)}
                   </Card.Text>
                   <Card.Text>
-                    Route: {flight.departure} → {flight.destination}
+                    Route: {formatRoute(flight.departure, flight.destination)}
                   </Card.Text>
                   <Button
                     variant="secondary"
@@ -242,7 +307,7 @@ const TripSummary = () => {
               <Modal show={showFlightModal} onHide={() => setShowFlightModal(false)} centered size="lg">
                 <Modal.Header closeButton>
                   <Modal.Title>
-                    {flight.airline} ({flight.departure} → {flight.destination})
+                    {flight.airline} ({formatRoute(flight.departure, flight.destination)})
                   </Modal.Title>
                 </Modal.Header>
                 <Modal.Body>
@@ -263,9 +328,9 @@ const TripSummary = () => {
                   <div style={{ marginTop: 15 }}>
                     <b>Airline:</b> {flight.airline}<br />
                     <b>Price:</b> ${flight.price}<br />
-                    <b>Departure:</b> {flight.departure} at {flight.departure_time}<br />
-                    <b>Arrival:</b> {flight.destination} at {flight.arrival_time}<br />
-                    <b>Route:</b> {flight.departure} → {flight.destination}<br />
+                    <b>Departure:</b> {capitalize(flight.departure)} at {flight.departure_time}<br />
+                    <b>Arrival:</b> {capitalize(flight.destination)} at {flight.arrival_time}<br />
+                    <b>Route:</b> {formatRoute(flight.departure, flight.destination)}<br />
                   </div>
                   {flight.bookingLink && (
                     <div style={{ margin: '15px 0' }}>
@@ -289,7 +354,7 @@ const TripSummary = () => {
                 <Card.Body>
                   <Card.Title>Accommodation</Card.Title>
                   <Card.Text>Name: {accommodation.name}</Card.Text>
-                  <Card.Text>Type: {accommodation.type}</Card.Text>
+                  <Card.Text>Type: {capitalize(accommodation.type)}</Card.Text>
                   <Card.Text>Price: ${accommodation.price}</Card.Text>
                   <Button
                     variant="secondary"
@@ -320,7 +385,7 @@ const TripSummary = () => {
                     </Carousel>
                   )}
                   <div style={{ marginTop: 15 }}>
-                    <b>Type:</b> {accommodation.type}<br />
+                    <b>Type:</b> {capitalize(accommodation.type)}<br />
                     <b>Price:</b> ${accommodation.price} <br />
                     <b>Location:</b> {accommodation.location}<br />
                     <b>Description:</b> {accommodation.description || 'No description.'}<br />

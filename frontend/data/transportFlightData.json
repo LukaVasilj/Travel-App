@@ -1,21 +1,25 @@
 [
   {
     "id": "bus1",
-    "name": "Shuttle Bus",
+    "name": "Globtour",
     "currLocation": "dubrovnik",
     "departure": "split",
     "price": 25,
     "departure_time": "8:00 AM",
-    "arrival_time": "12:00 PM"
+    "arrival_time": "12:00 PM",
+    "image": "/images/globtour2.jpg",
+    "bookingLink": "https://globtour.com/"
   },
   {
     "id": "car1",
-    "name": "Rent-a-Car",
+    "name": "Rent-a-Car - Hertz",
     "currLocation": "dubrovnik",
     "departure": "split",
-    "price": 100,
+    "price": 30,
     "departure_time": "9:00 AM",
-    "arrival_time": "12:00 PM"
+    "arrival_time": "12:00 PM",
+    "image": "/images/hertz.png",
+    "bookingLink": "https://www.rentacar.com/"
   },
   {
     "id": "train1",
@@ -24,16 +28,31 @@
     "departure": "split",
     "price": 50,
     "departure_time": "7:00 AM",
-    "arrival_time": "1:00 PM"
+    "arrival_time": "1:00 PM",
+    "image": "/images/train.png",
+    "bookingLink": "https://www.hzpp.hr/"
   },
   {
     "id": "bus2",
-    "name": "Shuttle Bus",
-    "currLocation": "zagreb",
+    "name": "Globtour",
+    "currLocation": "dubrovnik",
     "departure": "split",
-    "price": 30,
-    "departure_time": "6:00 AM",
-    "arrival_time": "1:00 PM"
+    "price": 20,
+    "departure_time": "9:00 AM",
+    "arrival_time": "1:00 PM",
+    "image": "/images/globtour2.jpg",
+    "bookingLink": "https://globtour.com/"
+  },
+  {
+    "id": "bus3",
+    "name": "Flixbus",
+    "currLocation": "dubrovnik",
+    "departure": "split",
+    "price": 20,
+    "departure_time": "5:30 AM",
+    "arrival_time": "9:00 PM",
+    "image": "/images/flixbus.jpg",
+    "bookingLink": "https://www.flixbus.com/"
   },
   {
     "id": "car2",
@@ -42,6 +61,8 @@
     "departure": "split",
     "price": 120,
     "departure_time": "8:00 AM",
-    "arrival_time": "1:00 PM"
+    "arrival_time": "1:00 PM",
+    "image": "/images/rentacar.png",
+    "bookingLink": "https://www.rentacar.com/"
   }
 ]

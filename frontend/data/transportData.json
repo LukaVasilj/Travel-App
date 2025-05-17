@@ -4,22 +4,26 @@
     "type": "bus",
     "departure": "split",
     "destination": "berlin",
-    "price": 50,
-    "duration": "12h",
-    "company": "Croatia Bus",
-    "departure_time": "8:00 AM",
-    "arrival_time": "8:00 PM"
+    "price": 78,
+    "duration": "18h",
+    "company": "Globtour",
+    "departure_time": "5:00 AM",
+    "arrival_time": "11:00 PM",
+    "image": "/images/globtour2.jpg",
+    "bookingLink": "https://globtour.com/"
   },
   {
     "id": "bus2",
     "type": "bus",
     "departure": "split",
-    "destination": "zagreb",
-    "price": 20,
-    "duration": "4h",
+    "destination": "berlin",
+    "price": 90,
+    "duration": "17h",
     "company": "FlixBus",
     "departure_time": "6:00 AM",
-    "arrival_time": "10:00 AM"
+    "arrival_time": "11:00 PM",
+    "image": "/images/flixbus.jpg",
+    "bookingLink": "https://www.flixbus.com/"
   },
   {
     "id": "train1",
@@ -30,17 +34,21 @@
     "duration": "10h",
     "company": "EuroRail",
     "departure_time": "7:00 AM",
-    "arrival_time": "5:00 PM"
+    "arrival_time": "5:00 PM",
+    "image": "/images/train.png",
+    "bookingLink": "https://www.hzpp.hr/"
   },
   {
     "id": "car1",
     "type": "rent-a-car",
     "departure": "split",
     "destination": "berlin",
-    "price": 200,
+    "price": 30,
     "duration": "10h",
     "company": "Hertz",
     "departure_time": "9:00 AM",
-    "arrival_time": "7:00 PM"
+    "arrival_time": "7:00 PM",
+    "image": "/images/hertz.png",
+    "bookingLink": "https://www.hertz.com/"
   }
 ]
