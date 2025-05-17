@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import AppNavbar from '../components/Navbar';
-import { Container, Card, Spinner, Button, Modal, Carousel } from 'react-bootstrap';
+import { Container, Card, Spinner, Button, Modal, Carousel, Form, Alert } from 'react-bootstrap';
 
 interface Trip {
   id: number;
@@ -23,6 +23,14 @@ interface SharedBy {
 interface SharedTripData {
   trip: Trip;
   shared_by: SharedBy;
+  shared_trip_id?: number; // Dodaj ako backend šalje id share-a
+}
+
+interface Feedback {
+  id: number;
+  rating: number;
+  comment: string;
+  user: { id: number; username: string };
 }
 
 // Helper za veliko prvo slovo
@@ -41,6 +49,13 @@ const SharedTrips = () => {
   const [modalImages, setModalImages] = useState<string[]>([]);
   const [modalAccName, setModalAccName] = useState<string>('');
 
+  // Feedback state
+  const [feedbacks, setFeedbacks] = useState<{ [tripId: number]: Feedback[] }>({});
+  const [feedbackLeft, setFeedbackLeft] = useState<{ [sharedTripId: number]: boolean }>({});
+  const [feedbackForm, setFeedbackForm] = useState<{ [sharedTripId: number]: { rating: number; comment: string } }>({});
+  const [feedbackError, setFeedbackError] = useState<{ [sharedTripId: number]: string }>({});
+  const [feedbackSuccess, setFeedbackSuccess] = useState<{ [sharedTripId: number]: string }>({});
+
   useEffect(() => {
     const fetchSharedTrips = async () => {
       const token = localStorage.getItem('access_token');
@@ -51,6 +66,25 @@ const SharedTrips = () => {
       if (res.ok) {
         const data = await res.json();
         setSharedTrips(data);
+
+        // Za svaki trip, dohvati feedbackove i provjeri je li korisnik već ostavio feedback
+        data.forEach(async (item: any) => {
+            const tripId = item.trip.id;
+            const sharedTripId = item.shared_trip_id;
+            // Dohvati feedbackove za shared trip
+            const fbRes = await fetch(`http://localhost:8000/api/trips/shared-feedbacks/${sharedTripId}`, {
+                headers: { 'Authorization': `Bearer ${token}` },
+                credentials: 'include'
+            });
+            if (fbRes.ok) {
+                const fbData = await fbRes.json();
+                setFeedbacks(prev => ({ ...prev, [sharedTripId]: fbData }));
+                // Provjeri je li korisnik već ostavio feedback
+                const myId = JSON.parse(atob(token.split('.')[1])).user_id;
+                const alreadyLeft = fbData.some((fb: Feedback) => fb.user.id === myId);
+                setFeedbackLeft(prev => ({ ...prev, [sharedTripId]: alreadyLeft }));
+            }
+            });
       }
       setLoading(false);
     };
@@ -81,6 +115,64 @@ const SharedTrips = () => {
     setModalAccName('');
   };
 
+  // Feedback form handlers
+  const handleFeedbackChange = (sharedTripId: number, field: 'rating' | 'comment', value: any) => {
+    setFeedbackForm(prev => ({
+      ...prev,
+      [sharedTripId]: { ...prev[sharedTripId], [field]: value }
+    }));
+  };
+
+  const handleFeedbackSubmit = async (sharedTripId: number, tripId: number) => {
+  setFeedbackError({});
+  setFeedbackSuccess({});
+  const token = localStorage.getItem('access_token');
+  // Dohvati CSRF token
+  const csrfRes = await fetch('http://localhost:8000/api/csrf-token', { credentials: 'include' });
+  const csrfData = await csrfRes.json();
+  const csrfToken = csrfData.csrf_token;
+
+  const form = feedbackForm[sharedTripId];
+  if (!form || !form.rating || !form.comment) {
+    setFeedbackError(prev => ({ ...prev, [sharedTripId]: 'Please provide rating and comment.' }));
+    return;
+  }
+  const res = await fetch('http://localhost:8000/api/trips/feedback/', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+      'X-CSRF-Token': csrfToken
+    },
+    credentials: 'include',
+    body: JSON.stringify({
+      shared_trip_id: sharedTripId,
+      rating: form.rating,
+      comment: form.comment
+    })
+  });
+  if (res.ok) {
+    setFeedbackSuccess(prev => ({ ...prev, [sharedTripId]: 'Feedback submitted!' }));
+    setFeedbackLeft(prev => ({ ...prev, [sharedTripId]: true }));
+    // Refresh feedbacks
+    const fbRes = await fetch(`http://localhost:8000/api/trips/shared-feedbacks/${sharedTripId}`, {
+      headers: { 'Authorization': `Bearer ${token}` },
+      credentials: 'include'
+    });
+    if (fbRes.ok) {
+      const fbData = await fbRes.json();
+      setFeedbacks(prev => ({ ...prev, [sharedTripId]: fbData }));
+    }
+  } else {
+    const data = await res.json();
+    // Ako je feedback već ostavljen, sakrij formu
+    if (data.detail === "Feedback already left.") {
+      setFeedbackLeft(prev => ({ ...prev, [sharedTripId]: true }));
+    }
+    setFeedbackError(prev => ({ ...prev, [sharedTripId]: data.detail || 'Error submitting feedback.' }));
+  }
+};
+
   return (
     <>
       <AppNavbar />
@@ -91,8 +183,9 @@ const SharedTrips = () => {
         ) : sharedTrips.length === 0 ? (
           <p>No trips shared with you.</p>
         ) : (
-          sharedTrips.map(({ trip, shared_by }, idx) => {
-            if (!trip || !shared_by) return null; // zaštita od undefined
+          sharedTrips.map(({ trip, shared_by, shared_trip_id }, idx) => {
+            if (!trip || !shared_by) return null;
+            const stId = shared_trip_id; // fallback ako nema shared_trip_id
             return (
               <Card key={trip.id ?? idx} style={{ marginBottom: '20px', borderColor: '#007bff' }}>
                 <Card.Body>
@@ -252,6 +345,57 @@ const SharedTrips = () => {
                           </div>
                         )}
                       </div>
+                    )}
+                  </div>
+                  {/* FEEDBACK FORM */}
+                  <div style={{ marginTop: 20 }}>
+                    <h6>Feedback</h6>
+                    {feedbacks[stId] && feedbacks[stId].length > 0 && (
+                      <div style={{ marginBottom: 10 }}>
+                        {feedbacks[stId].map(fb => (
+                          <Alert key={fb.id} variant="light" style={{ border: '1px solid #ddd', marginBottom: 5 }}>
+                            <b>{fb.user.username}:</b> {fb.comment} <span style={{ color: '#f39c12' }}>({fb.rating}/5)</span>
+                          </Alert>
+                        ))}
+                      </div>
+                    )}
+                    {!feedbackLeft[stId] ? (
+                      <Form>
+                        <Form.Group>
+                          <Form.Label>Rating</Form.Label>
+                          <Form.Control
+                            as="select"
+                            value={feedbackForm[stId]?.rating || ''}
+                            onChange={e => handleFeedbackChange(stId, 'rating', Number(e.target.value))}
+                          >
+                            <option value="">Select</option>
+                            {[1, 2, 3, 4, 5].map(n => (
+                              <option key={n} value={n}>{n}</option>
+                            ))}
+                          </Form.Control>
+                        </Form.Group>
+                        <Form.Group>
+                          <Form.Label>Comment</Form.Label>
+                          <Form.Control
+                            as="textarea"
+                            rows={2}
+                            value={feedbackForm[stId]?.comment || ''}
+                            onChange={e => handleFeedbackChange(stId, 'comment', e.target.value)}
+                          />
+                        </Form.Group>
+                        {feedbackError[stId] && <Alert variant="danger">{feedbackError[stId]}</Alert>}
+                        {feedbackSuccess[stId] && <Alert variant="success">{feedbackSuccess[stId]}</Alert>}
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          style={{ marginTop: 8 }}
+                          onClick={() => handleFeedbackSubmit(stId, trip.id)}
+                        >
+                          Submit Feedback
+                        </Button>
+                      </Form>
+                    ) : (
+                      <Alert variant="success" style={{ marginTop: 8 }}>You left feedback for this trip.</Alert>
                     )}
                   </div>
                 </Card.Body>

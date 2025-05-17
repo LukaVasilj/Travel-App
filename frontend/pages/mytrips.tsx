@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import AppNavbar from '../components/Navbar';
-import { Container, Card, Spinner, Button, Modal, Carousel } from 'react-bootstrap';
+import { Container, Card, Spinner, Button, Modal, Carousel, Alert } from 'react-bootstrap';
 
 interface Trip {
   id: number;
@@ -12,6 +12,13 @@ interface Trip {
   accommodation?: any;
   flight?: any;
   total_cost: number;
+}
+
+interface Feedback {
+  id: number;
+  rating: number;
+  comment: string;
+  user: { id: number; username: string };
 }
 
 // Helper za veliko prvo slovo
@@ -41,33 +48,45 @@ const MyTrips = () => {
 
   const [sharedWith, setSharedWith] = useState<{ [tripId: number]: any[] }>({});
 
-  useEffect(() => {
-  const fetchTrips = async () => {
-    const token = localStorage.getItem('access_token');
-    const res = await fetch('http://localhost:8000/api/trips/', {
-      headers: { 'Authorization': `Bearer ${token}` },
-      credentials: 'include'
-    });
-    if (res.ok) {
-      const data = await res.json();
-      setTrips(data);
+  // Feedback state
+  const [feedbacks, setFeedbacks] = useState<{ [tripId: number]: Feedback[] }>({});
 
-      // Dohvati sharedWith za svaki trip
-      data.forEach(async (trip: Trip) => {
-        const sharedRes = await fetch(`http://localhost:8000/api/trips/shared-with/${trip.id}`, {
-          headers: { 'Authorization': `Bearer ${token}` },
-          credentials: 'include'
-        });
-        if (sharedRes.ok) {
-          const sharedData = await sharedRes.json();
-          setSharedWith(prev => ({ ...prev, [trip.id]: sharedData }));
-        }
+  useEffect(() => {
+    const fetchTrips = async () => {
+      const token = localStorage.getItem('access_token');
+      const res = await fetch('http://localhost:8000/api/trips/', {
+        headers: { 'Authorization': `Bearer ${token}` },
+        credentials: 'include'
       });
-    }
-    setLoading(false);
-  };
-  fetchTrips();
-}, []);
+      if (res.ok) {
+        const data = await res.json();
+        setTrips(data);
+
+        // Dohvati sharedWith za svaki trip i feedbackove
+        data.forEach(async (trip: Trip) => {
+          const sharedRes = await fetch(`http://localhost:8000/api/trips/shared-with/${trip.id}`, {
+            headers: { 'Authorization': `Bearer ${token}` },
+            credentials: 'include'
+          });
+          if (sharedRes.ok) {
+            const sharedData = await sharedRes.json();
+            setSharedWith(prev => ({ ...prev, [trip.id]: sharedData }));
+          }
+          // Dohvati feedbackove
+          const fbRes = await fetch(`http://localhost:8000/api/trips/${trip.id}/feedbacks`, {
+            headers: { 'Authorization': `Bearer ${token}` },
+            credentials: 'include'
+          });
+          if (fbRes.ok) {
+            const fbData = await fbRes.json();
+            setFeedbacks(prev => ({ ...prev, [trip.id]: fbData }));
+          }
+        });
+      }
+      setLoading(false);
+    };
+    fetchTrips();
+  }, []);
 
   const toggleExpand = (tripId: number) => {
     setExpanded(prev => ({ ...prev, [tripId]: !prev[tripId] }));
@@ -167,27 +186,39 @@ const MyTrips = () => {
             <Card key={trip.id} style={{ marginBottom: '20px' }}>
               <Card.Body>
                 <Card.Title>
-                  <b>Name:</b> {trip.name}
-                  <Button
-                    variant="outline-secondary"
-                    size="sm"
-                    style={{ marginLeft: 10 }}
-                    onClick={() => openShareModal(trip.id)}
-                  >
-                    Share
-                  </Button>
-                  <Button
-                    variant="outline-danger"
-                    size="sm"
-                    style={{ marginLeft: 10 }}
-                    onClick={() => {
-                      setTripToDelete(trip.id);
-                      setShowDeleteModal(true);
-                    }}
-                  >
-                    Delete
-                  </Button>
-                </Card.Title>
+  <b>Name:</b> {trip.name}
+  {sharedWith[trip.id] && sharedWith[trip.id].length > 0 && (
+    <span style={{ float: 'right', fontSize: 14, color: '#007bff' }}>
+      Trip shared with user:{" "}
+      <b>
+        {sharedWith[trip.id].map((user, idx) => (
+          <span key={user.id}>
+            {user.username}{idx < sharedWith[trip.id].length - 1 ? ', ' : ''}
+          </span>
+        ))}
+      </b>
+    </span>
+  )}
+  <Button
+    variant="outline-secondary"
+    size="sm"
+    style={{ marginLeft: 10 }}
+    onClick={() => openShareModal(trip.id)}
+  >
+    Share
+  </Button>
+  <Button
+    variant="outline-danger"
+    size="sm"
+    style={{ marginLeft: 10 }}
+    onClick={() => {
+      setTripToDelete(trip.id);
+      setShowDeleteModal(true);
+    }}
+  >
+    Delete
+  </Button>
+</Card.Title>
                 <div>
                   <b>Dates:</b> {trip.start_date} - {trip.end_date}<br />
                   <b>Transport:</b> {trip.transport_type.toUpperCase()}<br />
@@ -336,20 +367,24 @@ const MyTrips = () => {
                               </a>
                             </div>
                           )}
-                          
-                        </div>
-                      )}{sharedWith[trip.id] && sharedWith[trip.id].length > 0 && (
-                        <div style={{ marginTop: 10 }}>
-                          <b>Trip Shared with user:</b>{" "}
-                          {sharedWith[trip.id].map((user, idx) => (
-                            <span key={user.id}>
-                              {user.username}{idx < sharedWith[trip.id].length - 1 ? ', ' : ''}
-                            </span>
-                          ))}
                         </div>
                       )}
+                      
                     </div>
                   )}
+                  {/* FEEDBACKS */}
+                  <div style={{ marginTop: 20 }}>
+                    <h6>Feedback</h6>
+                    {feedbacks[trip.id] && feedbacks[trip.id].length > 0 ? (
+                      feedbacks[trip.id].map(fb => (
+                        <Alert key={fb.id} variant="light" style={{ border: '1px solid #ddd', marginBottom: 5 }}>
+                          <b>{fb.user.username}:</b> {fb.comment} <span style={{ color: '#f39c12' }}>({fb.rating}/5)</span>
+                        </Alert>
+                      ))
+                    ) : (
+                      <span style={{ color: '#888' }}>No feedbacks yet.</span>
+                    )}
+                  </div>
                 </div>
               </Card.Body>
             </Card>

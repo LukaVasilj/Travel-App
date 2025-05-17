@@ -1,12 +1,17 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from models import Trip, User , Friend, SharedTrip
+from models import Trip, User , Friend, SharedTrip , SharedTripFeedback
 from database import get_db
 from routers.auth import get_current_user
 from pydantic import BaseModel
 from typing import Optional, List
 
 router = APIRouter()
+
+class FeedbackRequest(BaseModel):
+    shared_trip_id: int
+    rating: int
+    comment: str
 
 class ShareTripRequest(BaseModel):
     trip_id: int
@@ -113,12 +118,16 @@ def share_trip(request: ShareTripRequest, db: Session = Depends(get_db), current
 def delete_trip(trip_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     trip = db.query(Trip).filter(Trip.id == trip_id, Trip.user_id == current_user.id).first()
     if not trip:
-        raise HTTPException(status_code=404, detail="Trip not found")
-    # Prvo obriši sve share-ove za taj trip
+        raise HTTPException(status_code=404, detail="Trip not found or not yours.")
+
+    # Prvo obriši sve feedbackove povezane sa shared tripovima
+    shared_trips = db.query(SharedTrip).filter(SharedTrip.trip_id == trip_id).all()
+    for shared in shared_trips:
+        db.query(SharedTripFeedback).filter(SharedTripFeedback.shared_trip_id == shared.id).delete()
     db.query(SharedTrip).filter(SharedTrip.trip_id == trip_id).delete()
     db.delete(trip)
     db.commit()
-    return {"message": "Trip deleted"}
+    return {"detail": "Trip deleted"}
 
 @router.get("/trips/shared/", response_model=list[dict])
 def get_shared_trips(
@@ -145,7 +154,8 @@ def get_shared_trips(
                     "id": s.shared_by.id,
                     "username": s.shared_by.username,
                     "email": s.shared_by.email
-                }
+                },
+                "shared_trip_id": s.id  # <-- OVO DODAJ!
             })
     return result
 
@@ -168,3 +178,80 @@ def get_shared_with_for_trip(
         }
         for s in shared if s.shared_with
     ]
+    
+@router.post("/trips/feedback/")
+def leave_feedback(
+    feedback: FeedbackRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    shared_trip = db.query(SharedTrip).filter(
+        SharedTrip.id == feedback.shared_trip_id,
+        SharedTrip.shared_with_id == current_user.id
+    ).first()
+    if not shared_trip:
+        raise HTTPException(status_code=404, detail="Shared trip not found or not yours.")
+
+    # Provjeri je li već ostavljen feedback
+    existing = db.query(SharedTripFeedback).filter(
+        SharedTripFeedback.shared_trip_id == feedback.shared_trip_id,
+        SharedTripFeedback.created_by_id == current_user.id
+    ).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Feedback already left.")
+
+    fb = SharedTripFeedback(
+        shared_trip_id=feedback.shared_trip_id,
+        rating=feedback.rating,
+        comment=feedback.comment,
+        created_by_id=current_user.id
+    )
+    db.add(fb)
+    db.commit()
+    return {"message": "Feedback submitted"}
+
+@router.get("/trips/{trip_id}/feedbacks", response_model=List[dict])
+def get_feedbacks_for_trip(
+    trip_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    # Samo vlasnik tripa može vidjeti feedbackove
+    trip = db.query(Trip).filter(Trip.id == trip_id, Trip.user_id == current_user.id).first()
+    if not trip:
+        raise HTTPException(status_code=404, detail="Trip not found or not yours.")
+
+    shared_trips = db.query(SharedTrip).filter(SharedTrip.trip_id == trip_id).all()
+    feedbacks = []
+    for s in shared_trips:
+        for fb in s.feedbacks:
+            feedbacks.append({
+                "id": fb.id,
+                "rating": fb.rating,
+                "comment": fb.comment,
+                "user": {"id": fb.created_by.id, "username": fb.created_by.username}
+            })
+    return feedbacks
+
+@router.get("/trips/shared-feedbacks/{shared_trip_id}", response_model=List[dict])
+def get_feedbacks_for_shared_trip(
+    shared_trip_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    shared_trip = db.query(SharedTrip).filter(
+        SharedTrip.id == shared_trip_id,
+        SharedTrip.shared_with_id == current_user.id
+    ).first()
+    if not shared_trip:
+        raise HTTPException(status_code=404, detail="Shared trip not found or not yours.")
+
+    feedbacks = []
+    for fb in shared_trip.feedbacks:
+        feedbacks.append({
+            "id": fb.id,
+            "rating": fb.rating,
+            "comment": fb.comment,
+            "user": {"id": fb.created_by.id, "username": fb.created_by.username}
+        })
+    return feedbacks

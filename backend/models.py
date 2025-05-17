@@ -79,3 +79,15 @@ class SharedTrip(Base):
     trip = relationship("Trip")
     shared_with = relationship("User", foreign_keys=[shared_with_id])
     shared_by = relationship("User", foreign_keys=[shared_by_id])
+    feedbacks = relationship("SharedTripFeedback", back_populates="shared_trip", cascade="all, delete-orphan")
+    
+class SharedTripFeedback(Base):
+    __tablename__ = "shared_trip_feedback"
+    id = Column(Integer, primary_key=True, index=True)
+    shared_trip_id = Column(Integer, ForeignKey("shared_trips.id"))  # <-- ispravljeno!
+    rating = Column(Integer)  # npr. 1-5
+    comment = Column(String)
+    created_by_id = Column(Integer, ForeignKey("users.id"))  # <-- ispravljeno!
+
+    shared_trip = relationship("SharedTrip", back_populates="feedbacks")
+    created_by = relationship("User")
