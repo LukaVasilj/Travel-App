@@ -14,6 +14,17 @@ interface Trip {
   total_cost: number;
 }
 
+interface SharedBy {
+  id: number;
+  username: string;
+  email: string;
+}
+
+interface SharedTripData {
+  trip: Trip;
+  shared_by: SharedBy;
+}
+
 // Helper za veliko prvo slovo
 const capitalize = (str: string) =>
   str && typeof str === 'string'
@@ -21,7 +32,7 @@ const capitalize = (str: string) =>
     : '';
 
 const SharedTrips = () => {
-  const [sharedTrips, setSharedTrips] = useState<Trip[]>([]);
+  const [sharedTrips, setSharedTrips] = useState<SharedTripData[]>([]);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState<{ [key: number]: boolean }>({});
   const [flightExpanded, setFlightExpanded] = useState<{ [key: number]: boolean }>({});
@@ -80,167 +91,173 @@ const SharedTrips = () => {
         ) : sharedTrips.length === 0 ? (
           <p>No trips shared with you.</p>
         ) : (
-          sharedTrips.map(trip => (
-            <Card key={trip.id} style={{ marginBottom: '20px', borderColor: '#007bff' }}>
-              <Card.Body>
-                <Card.Title>
-                  <b>Name:</b> {trip.name}
-                </Card.Title>
-                <div>
-                  <b>Dates:</b> {trip.start_date} - {trip.end_date}<br />
-                  <b>Transport:</b> {trip.transport_type.toUpperCase()}<br />
-                  <b>Total Cost:</b> ${trip.total_cost}<br />
-                  {/* Transport Option */}
-                  {trip.transport_option && (
+          sharedTrips.map(({ trip, shared_by }, idx) => {
+            if (!trip || !shared_by) return null; // zaštita od undefined
+            return (
+              <Card key={trip.id ?? idx} style={{ marginBottom: '20px', borderColor: '#007bff' }}>
+                <Card.Body>
+                  <Card.Title>
+                    <b>Name:</b> {trip.name}
+                    <span style={{ float: 'right', fontSize: 14, color: '#007bff' }}>
+                      Shared by: <b>{shared_by.username}</b>
+                    </span>
+                  </Card.Title>
                   <div>
-                    <b>Transport Option:</b>
-                    {trip.transport_option.id === 'default' ? (
-                      <> Already have a ride to airport (0$)</>
-                    ) : (
-                      <>
-                        {trip.transport_option.name && <> {trip.transport_option.name}</>}
-                        {trip.transport_option.company && <> ({trip.transport_option.company})</>}
-                        {trip.transport_option.price && (
+                    <b>Dates:</b> {trip.start_date} - {trip.end_date}<br />
+                    <b>Transport:</b> {trip.transport_type.toUpperCase()}<br />
+                    <b>Total Cost:</b> ${trip.total_cost}<br />
+                    {/* Transport Option */}
+                    {trip.transport_option && (
+                      <div>
+                        <b>Transport Option:</b>
+                        {trip.transport_option.id === 'default' ? (
+                          <> Already have a ride to airport (0$)</>
+                        ) : (
                           <>
-                            {'  ($'}{trip.transport_option.price}{')'}
-                            <Button
-                              variant="link"
-                              style={{ padding: 0, marginLeft: 8, fontSize: 18, verticalAlign: 'middle' }}
-                              onClick={() => toggleExpand(trip.id)}
-                              aria-label={expanded[trip.id] ? 'Hide details' : 'Show more'}
-                            >
-                              {expanded[trip.id] ? '▲' : '▼'}
-                            </Button>
+                            {trip.transport_option.name && <> {trip.transport_option.name}</>}
+                            {trip.transport_option.company && <> ({trip.transport_option.company})</>}
+                            {trip.transport_option.price && (
+                              <>
+                                {'  ($'}{trip.transport_option.price}{')'}
+                                <Button
+                                  variant="link"
+                                  style={{ padding: 0, marginLeft: 8, fontSize: 18, verticalAlign: 'middle' }}
+                                  onClick={() => toggleExpand(trip.id)}
+                                  aria-label={expanded[trip.id] ? 'Hide details' : 'Show more'}
+                                >
+                                  {expanded[trip.id] ? '▲' : '▼'}
+                                </Button>
+                              </>
+                            )}
                           </>
                         )}
-                      </>
+                      </div>
+                    )}
+                    {trip.transport_option && expanded[trip.id] && (
+                      <div style={{ marginTop: '10px', marginLeft: '10px' }}>
+                        {trip.transport_option.departure_time && (
+                          <div>
+                            <b>Departure Time:</b> {trip.transport_option.departure_time}
+                          </div>
+                        )}
+                        {trip.transport_option.arrival_time && (
+                          <div>
+                            <b>Arrival Time:</b> {trip.transport_option.arrival_time}
+                          </div>
+                        )}
+                        {trip.transport_option.currLocation && trip.transport_option.departure && (
+                          <div>
+                            <b>Route:</b> {capitalize(trip.transport_option.currLocation)} &rarr; {capitalize(trip.transport_option.departure)}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    {/* Accommodation */}
+                    {trip.accommodation && (
+                      <div>
+                        <b>Accommodation:</b> {trip.accommodation.name} (${trip.accommodation.price})
+                        <Button
+                          variant="link"
+                          style={{ padding: 0, marginLeft: 8, fontSize: 18, verticalAlign: 'middle' }}
+                          onClick={() => toggleAccommodationExpand(trip.id)}
+                          aria-label={accommodationExpanded[trip.id] ? 'Hide accommodation details' : 'Show accommodation details'}
+                        >
+                          {accommodationExpanded[trip.id] ? '▲' : '▼'}
+                        </Button>
+                        {accommodationExpanded[trip.id] && (
+                          <div style={{ marginTop: '10px', marginLeft: '10px' }}>
+                            {trip.accommodation.location && (
+                              <div>
+                                <b>Location:</b> {trip.accommodation.location}
+                              </div>
+                            )}
+                            {trip.accommodation.description && (
+                              <div>
+                                <b>Description:</b> {trip.accommodation.description}
+                              </div>
+                            )}
+                            {/* Prikaz buttona za slike */}
+                            {(
+                              (trip.accommodation.images && trip.accommodation.images.length > 0) ||
+                              trip.accommodation.image
+                            ) && (
+                              <div style={{ margin: '10px 0' }}>
+                                <b>Pictures:</b>{' '}
+                                <Button
+                                  variant="outline-primary"
+                                  size="sm"
+                                  onClick={() => {
+                                    let imgs: string[] = [];
+                                    if (trip.accommodation.image) imgs.push(trip.accommodation.image);
+                                    if (trip.accommodation.images && Array.isArray(trip.accommodation.images)) {
+                                      trip.accommodation.images.forEach((img: string) => {
+                                        if (img !== trip.accommodation.image) imgs.push(img);
+                                      });
+                                    }
+                                    handleShowImages(imgs, trip.accommodation.name);
+                                  }}
+                                  style={{ marginLeft: 8 }}
+                                >
+                                  Show pictures
+                                </Button>
+                              </div>
+                            )}
+                            {trip.accommodation.bookingLink && (
+                              <div>
+                                <b>Booking Link:</b> <a href={trip.accommodation.bookingLink} target="_blank" rel="noopener noreferrer">{trip.accommodation.bookingLink}</a>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        <br />
+                      </div>
+                    )}
+                    {/* Flight */}
+                    {trip.flight && (
+                      <div>
+                        <b>Flight:</b> {trip.flight.airline} (${trip.flight.price})
+                        <Button
+                          variant="link"
+                          style={{ padding: 0, marginLeft: 8, fontSize: 18, verticalAlign: 'middle' }}
+                          onClick={() => toggleFlightExpand(trip.id)}
+                          aria-label={flightExpanded[trip.id] ? 'Hide flight details' : 'Show flight details'}
+                        >
+                          {flightExpanded[trip.id] ? '▲' : '▼'}
+                        </Button>
+                        {flightExpanded[trip.id] && (
+                          <div style={{ marginTop: '10px', marginLeft: '10px' }}>
+                            {trip.flight.departure && trip.flight.destination && (
+                              <div>
+                                <b>Route:</b> {capitalize(trip.flight.departure)} &rarr; {capitalize(trip.flight.destination)}
+                              </div>
+                            )}
+                            {trip.flight.departure_time && (
+                              <div>
+                                <b>Departure Time:</b> {trip.flight.departure_time}
+                              </div>
+                            )}
+                            {trip.flight.arrival_time && (
+                              <div>
+                                <b>Arrival Time:</b> {trip.flight.arrival_time}
+                              </div>
+                            )}
+                            {trip.flight.bookingLink && (
+                              <div>
+                                <b>Booking Link:</b>{' '}
+                                <a href={trip.flight.bookingLink} target="_blank" rel="noopener noreferrer">
+                                  {trip.flight.bookingLink}
+                                </a>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     )}
                   </div>
-                )}
-                  {trip.transport_option && expanded[trip.id] && (
-                    <div style={{ marginTop: '10px', marginLeft: '10px' }}>
-                      {trip.transport_option.departure_time && (
-                        <div>
-                          <b>Departure Time:</b> {trip.transport_option.departure_time}
-                        </div>
-                      )}
-                      {trip.transport_option.arrival_time && (
-                        <div>
-                          <b>Arrival Time:</b> {trip.transport_option.arrival_time}
-                        </div>
-                      )}
-                      {trip.transport_option.currLocation && trip.transport_option.departure && (
-                        <div>
-                          <b>Route:</b> {capitalize(trip.transport_option.currLocation)} &rarr; {capitalize(trip.transport_option.departure)}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  {/* Accommodation */}
-                  {trip.accommodation && (
-                    <div>
-                      <b>Accommodation:</b> {trip.accommodation.name} (${trip.accommodation.price})
-                      <Button
-                        variant="link"
-                        style={{ padding: 0, marginLeft: 8, fontSize: 18, verticalAlign: 'middle' }}
-                        onClick={() => toggleAccommodationExpand(trip.id)}
-                        aria-label={accommodationExpanded[trip.id] ? 'Hide accommodation details' : 'Show accommodation details'}
-                      >
-                        {accommodationExpanded[trip.id] ? '▲' : '▼'}
-                      </Button>
-                      {accommodationExpanded[trip.id] && (
-                        <div style={{ marginTop: '10px', marginLeft: '10px' }}>
-                          {trip.accommodation.location && (
-                            <div>
-                              <b>Location:</b> {trip.accommodation.location}
-                            </div>
-                          )}
-                          {trip.accommodation.description && (
-                            <div>
-                              <b>Description:</b> {trip.accommodation.description}
-                            </div>
-                          )}
-                          {/* Prikaz buttona za slike */}
-                          {(
-                            (trip.accommodation.images && trip.accommodation.images.length > 0) ||
-                            trip.accommodation.image
-                          ) && (
-                            <div style={{ margin: '10px 0' }}>
-                              <b>Pictures:</b>{' '}
-                              <Button
-                                variant="outline-primary"
-                                size="sm"
-                                onClick={() => {
-                                  let imgs: string[] = [];
-                                  if (trip.accommodation.image) imgs.push(trip.accommodation.image);
-                                  if (trip.accommodation.images && Array.isArray(trip.accommodation.images)) {
-                                    trip.accommodation.images.forEach((img: string) => {
-                                      if (img !== trip.accommodation.image) imgs.push(img);
-                                    });
-                                  }
-                                  handleShowImages(imgs, trip.accommodation.name);
-                                }}
-                                style={{ marginLeft: 8 }}
-                              >
-                                Show pictures
-                              </Button>
-                            </div>
-                          )}
-                          {trip.accommodation.bookingLink && (
-                            <div>
-                              <b>Booking Link:</b> <a href={trip.accommodation.bookingLink} target="_blank" rel="noopener noreferrer">{trip.accommodation.bookingLink}</a>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                      <br />
-                    </div>
-                  )}
-                  {/* Flight */}
-                  {trip.flight && (
-                    <div>
-                      <b>Flight:</b> {trip.flight.airline} (${trip.flight.price})
-                      <Button
-                        variant="link"
-                        style={{ padding: 0, marginLeft: 8, fontSize: 18, verticalAlign: 'middle' }}
-                        onClick={() => toggleFlightExpand(trip.id)}
-                        aria-label={flightExpanded[trip.id] ? 'Hide flight details' : 'Show flight details'}
-                      >
-                        {flightExpanded[trip.id] ? '▲' : '▼'}
-                      </Button>
-                      {flightExpanded[trip.id] && (
-                        <div style={{ marginTop: '10px', marginLeft: '10px' }}>
-                          {trip.flight.departure && trip.flight.destination && (
-                            <div>
-                              <b>Route:</b> {capitalize(trip.flight.departure)} &rarr; {capitalize(trip.flight.destination)}
-                            </div>
-                          )}
-                          {trip.flight.departure_time && (
-                            <div>
-                              <b>Departure Time:</b> {trip.flight.departure_time}
-                            </div>
-                          )}
-                          {trip.flight.arrival_time && (
-                            <div>
-                              <b>Arrival Time:</b> {trip.flight.arrival_time}
-                            </div>
-                          )}
-                          {trip.flight.bookingLink && (
-                            <div>
-                              <b>Booking Link:</b>{' '}
-                              <a href={trip.flight.bookingLink} target="_blank" rel="noopener noreferrer">
-                                {trip.flight.bookingLink}
-                              </a>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </Card.Body>
-            </Card>
-          ))
+                </Card.Body>
+              </Card>
+            );
+          })
         )}
       </Container>
       {/* Modal za slike smještaja */}

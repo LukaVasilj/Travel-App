@@ -120,11 +120,51 @@ def delete_trip(trip_id: int, db: Session = Depends(get_db), current_user: User 
     db.commit()
     return {"message": "Trip deleted"}
 
-@router.get("/trips/shared/", response_model=List[TripOut])
+@router.get("/trips/shared/", response_model=list[dict])
 def get_shared_trips(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
     shared = db.query(SharedTrip).filter(SharedTrip.shared_with_id == current_user.id).all()
-    trips = [s.trip for s in shared if s.trip is not None]
-    return trips
+    result = []
+    for s in shared:
+        if s.trip and s.shared_by:
+            result.append({
+                "trip": {
+                    "id": s.trip.id,
+                    "name": s.trip.name,
+                    "start_date": s.trip.start_date,
+                    "end_date": s.trip.end_date,
+                    "transport_type": s.trip.transport_type,
+                    "transport_option": s.trip.transport_option,
+                    "accommodation": s.trip.accommodation,
+                    "flight": s.trip.flight,
+                    "total_cost": s.trip.total_cost,
+                },
+                "shared_by": {
+                    "id": s.shared_by.id,
+                    "username": s.shared_by.username,
+                    "email": s.shared_by.email
+                }
+            })
+    return result
+
+@router.get("/trips/shared-with/{trip_id}", response_model=List[dict])
+def get_shared_with_for_trip(
+    trip_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    # Provjeri da je trip od trenutnog korisnika
+    trip = db.query(Trip).filter(Trip.id == trip_id, Trip.user_id == current_user.id).first()
+    if not trip:
+        raise HTTPException(status_code=404, detail="Trip not found or not yours.")
+    shared = db.query(SharedTrip).filter(SharedTrip.trip_id == trip_id).all()
+    return [
+        {
+            "id": s.shared_with.id,
+            "username": s.shared_with.username,
+            "email": s.shared_with.email
+        }
+        for s in shared if s.shared_with
+    ]

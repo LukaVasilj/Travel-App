@@ -39,23 +39,35 @@ const MyTrips = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [tripToDelete, setTripToDelete] = useState<null | number>(null);
 
+  const [sharedWith, setSharedWith] = useState<{ [tripId: number]: any[] }>({});
+
   useEffect(() => {
-    const fetchTrips = async () => {
-      const token = localStorage.getItem('access_token');
-      const res = await fetch('http://localhost:8000/api/trips/', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-        credentials: 'include'
+  const fetchTrips = async () => {
+    const token = localStorage.getItem('access_token');
+    const res = await fetch('http://localhost:8000/api/trips/', {
+      headers: { 'Authorization': `Bearer ${token}` },
+      credentials: 'include'
+    });
+    if (res.ok) {
+      const data = await res.json();
+      setTrips(data);
+
+      // Dohvati sharedWith za svaki trip
+      data.forEach(async (trip: Trip) => {
+        const sharedRes = await fetch(`http://localhost:8000/api/trips/shared-with/${trip.id}`, {
+          headers: { 'Authorization': `Bearer ${token}` },
+          credentials: 'include'
+        });
+        if (sharedRes.ok) {
+          const sharedData = await sharedRes.json();
+          setSharedWith(prev => ({ ...prev, [trip.id]: sharedData }));
+        }
       });
-      if (res.ok) {
-        const data = await res.json();
-        setTrips(data);
-      }
-      setLoading(false);
-    };
-    fetchTrips();
-  }, []);
+    }
+    setLoading(false);
+  };
+  fetchTrips();
+}, []);
 
   const toggleExpand = (tripId: number) => {
     setExpanded(prev => ({ ...prev, [tripId]: !prev[tripId] }));
@@ -324,6 +336,16 @@ const MyTrips = () => {
                               </a>
                             </div>
                           )}
+                          
+                        </div>
+                      )}{sharedWith[trip.id] && sharedWith[trip.id].length > 0 && (
+                        <div style={{ marginTop: 10 }}>
+                          <b>Trip Shared with user:</b>{" "}
+                          {sharedWith[trip.id].map((user, idx) => (
+                            <span key={user.id}>
+                              {user.username}{idx < sharedWith[trip.id].length - 1 ? ', ' : ''}
+                            </span>
+                          ))}
                         </div>
                       )}
                     </div>
