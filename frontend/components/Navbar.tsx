@@ -30,6 +30,7 @@ const AppNavbar = () => {
               <Nav.Link as={Link} href="/glavnastranica">Home</Nav.Link>
               <Nav.Link as={Link} href="/friends">Friends</Nav.Link>
               <Nav.Link as={Link} href="/mytrips">My Trips</Nav.Link>
+              <Nav.Link as={Link} href="/sharedtrips">Shared Trips</Nav.Link>
               <NavDropdown title="Account" id="basic-nav-dropdown">
                 <NavDropdown.Item as={Link} href="/profile">Profile</NavDropdown.Item>
                 <NavDropdown.Item as={Link} href="/settings">Settings</NavDropdown.Item>

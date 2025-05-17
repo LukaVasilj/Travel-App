@@ -20,8 +20,8 @@ const capitalize = (str: string) =>
     ? str.charAt(0).toUpperCase() + str.slice(1).toLowerCase()
     : '';
 
-const MyTrips = () => {
-  const [trips, setTrips] = useState<Trip[]>([]);
+const SharedTrips = () => {
+  const [sharedTrips, setSharedTrips] = useState<Trip[]>([]);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState<{ [key: number]: boolean }>({});
   const [flightExpanded, setFlightExpanded] = useState<{ [key: number]: boolean }>({});
@@ -30,31 +30,20 @@ const MyTrips = () => {
   const [modalImages, setModalImages] = useState<string[]>([]);
   const [modalAccName, setModalAccName] = useState<string>('');
 
-  // --- Share trip modal state ---
-  const [showShareModal, setShowShareModal] = useState(false);
-  const [selectedTripId, setSelectedTripId] = useState<number | null>(null);
-  const [friends, setFriends] = useState<any[]>([]);
-
-  // --- Delete trip modal state ---
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [tripToDelete, setTripToDelete] = useState<null | number>(null);
-
   useEffect(() => {
-    const fetchTrips = async () => {
+    const fetchSharedTrips = async () => {
       const token = localStorage.getItem('access_token');
-      const res = await fetch('http://localhost:8000/api/trips/', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
+      const res = await fetch('http://localhost:8000/api/trips/shared/', {
+        headers: { 'Authorization': `Bearer ${token}` },
         credentials: 'include'
       });
       if (res.ok) {
         const data = await res.json();
-        setTrips(data);
+        setSharedTrips(data);
       }
       setLoading(false);
     };
-    fetchTrips();
+    fetchSharedTrips();
   }, []);
 
   const toggleExpand = (tripId: number) => {
@@ -81,100 +70,21 @@ const MyTrips = () => {
     setModalAccName('');
   };
 
-  // --- Share trip logic ---
-  const openShareModal = async (tripId: number) => {
-    setSelectedTripId(tripId);
-    const token = localStorage.getItem('access_token');
-    const res = await fetch('http://localhost:8000/api/friends/', {
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
-    if (res.ok) setFriends(await res.json());
-    setShowShareModal(true);
-  };
-
-  const handleShareTrip = async (friendId: number) => {
-    const token = localStorage.getItem('access_token');
-    // 1. Dohvati CSRF token
-    const csrfRes = await fetch('http://localhost:8000/api/csrf-token', {
-      credentials: 'include'
-    });
-    const csrfData = await csrfRes.json();
-    const csrfToken = csrfData.csrf_token;
-
-    // 2. Pošalji POST zahtjev s CSRF tokenom u headeru
-    await fetch('http://localhost:8000/api/trips/share/', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-        'X-CSRF-Token': csrfToken
-      },
-      credentials: 'include',
-      body: JSON.stringify({ trip_id: selectedTripId, friend_id: friendId })
-    });
-    setShowShareModal(false);
-  };
-
-  // --- Delete trip logic ---
-  const handleDeleteTrip = async () => {
-    if (tripToDelete === null) return;
-    const token = localStorage.getItem('access_token');
-    // Dohvati CSRF token
-    const csrfRes = await fetch('http://localhost:8000/api/csrf-token', {
-      credentials: 'include'
-    });
-    const csrfData = await csrfRes.json();
-    const csrfToken = csrfData.csrf_token;
-
-    const res = await fetch(`http://localhost:8000/api/trips/${tripToDelete}`, {
-      method: 'DELETE',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'X-CSRF-Token': csrfToken
-      },
-      credentials: 'include'
-    });
-    if (res.ok) {
-      setTrips(trips => trips.filter(trip => trip.id !== tripToDelete));
-    }
-    setShowDeleteModal(false);
-    setTripToDelete(null);
-  };
-
   return (
     <>
       <AppNavbar />
       <Container style={{ marginTop: '40px' }}>
-        <h1>My Trips</h1>
+        <h2>Trips Shared With Me</h2>
         {loading ? (
           <Spinner animation="border" />
-        ) : trips.length === 0 ? (
-          <p>You have no saved trips.</p>
+        ) : sharedTrips.length === 0 ? (
+          <p>No trips shared with you.</p>
         ) : (
-          trips.map(trip => (
-            <Card key={trip.id} style={{ marginBottom: '20px' }}>
+          sharedTrips.map(trip => (
+            <Card key={trip.id} style={{ marginBottom: '20px', borderColor: '#007bff' }}>
               <Card.Body>
                 <Card.Title>
                   <b>Name:</b> {trip.name}
-                  <Button
-                    variant="outline-secondary"
-                    size="sm"
-                    style={{ marginLeft: 10 }}
-                    onClick={() => openShareModal(trip.id)}
-                  >
-                    Share
-                  </Button>
-                  <Button
-                    variant="outline-danger"
-                    size="sm"
-                    style={{ marginLeft: 10 }}
-                    onClick={() => {
-                      setTripToDelete(trip.id);
-                      setShowDeleteModal(true);
-                    }}
-                  >
-                    Delete
-                  </Button>
                 </Card.Title>
                 <div>
                   <b>Dates:</b> {trip.start_date} - {trip.end_date}<br />
@@ -261,7 +171,6 @@ const MyTrips = () => {
                                 variant="outline-primary"
                                 size="sm"
                                 onClick={() => {
-                                  // Pripremi niz slika: glavna + ostale (bez duplikata)
                                   let imgs: string[] = [];
                                   if (trip.accommodation.image) imgs.push(trip.accommodation.image);
                                   if (trip.accommodation.images && Array.isArray(trip.accommodation.images)) {
@@ -358,47 +267,8 @@ const MyTrips = () => {
           )}
         </Modal.Body>
       </Modal>
-      {/* Modal za dijeljenje putovanja */}
-      <Modal show={showShareModal} onHide={() => setShowShareModal(false)} centered>
-        <Modal.Header closeButton>
-          <Modal.Title>Share Trip</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <p>Select a friend to share with:</p>
-          {friends.length === 0 ? (
-            <p>You have no friends to share with.</p>
-          ) : (
-            friends.map(friend => (
-              <Button
-                key={friend.id}
-                onClick={() => handleShareTrip(friend.id)}
-                style={{ margin: 4 }}
-              >
-                {friend.username}
-              </Button>
-            ))
-          )}
-        </Modal.Body>
-      </Modal>
-      {/* Modal za potvrdu brisanja */}
-      <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)} centered>
-        <Modal.Header closeButton>
-          <Modal.Title>Delete Trip</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <p>Are you sure you want to delete this trip?</p>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowDeleteModal(false)}>
-            Cancel
-          </Button>
-          <Button variant="danger" onClick={handleDeleteTrip}>
-            Delete
-          </Button>
-        </Modal.Footer>
-      </Modal>
     </>
   );
 };
 
-export default MyTrips;
+export default SharedTrips;

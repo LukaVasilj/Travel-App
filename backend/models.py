@@ -67,3 +67,15 @@ class Trip(Base):
     flight = Column(JSON, nullable=True)
     total_cost = Column(Float, nullable=False)
     user = relationship("User", back_populates="trips")
+    
+class SharedTrip(Base):
+    __tablename__ = "shared_trips"
+    id = Column(Integer, primary_key=True, index=True)
+    trip_id = Column(Integer, ForeignKey("trips.id"))
+    shared_with_id = Column(Integer, ForeignKey("users.id"))
+    shared_by_id = Column(Integer, ForeignKey("users.id"))
+    shared_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+    trip = relationship("Trip")
+    shared_with = relationship("User", foreign_keys=[shared_with_id])
+    shared_by = relationship("User", foreign_keys=[shared_by_id])

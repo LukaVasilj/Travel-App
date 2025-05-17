@@ -127,3 +127,22 @@ def get_friends(user_id: int, db: Session = Depends(get_db)):
         })
 
     return {"friends": friend_details}
+
+@router.get("/", response_model=list[dict])
+def get_my_friends(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    # Pronađi sve prijatelje gdje je status accepted
+    friends = db.query(Friend).filter(
+        ((Friend.user_id == current_user.id) | (Friend.friend_id == current_user.id)),
+        Friend.status == "accepted"
+    ).all()
+    # Vrati listu prijatelja (osim samog sebe)
+    result = []
+    for f in friends:
+        if f.user_id == current_user.id:
+            friend_id = f.friend_id
+        else:
+            friend_id = f.user_id
+        friend_user = db.query(User).filter(User.id == friend_id).first()
+        if friend_user:
+            result.append({"id": friend_user.id, "username": friend_user.username})
+    return result
