@@ -229,7 +229,7 @@ def get_feedbacks_for_trip(
                 "id": fb.id,
                 "rating": fb.rating,
                 "comment": fb.comment,
-                "user": {"id": fb.created_by.id, "username": fb.created_by.username}
+                "user": {"id": fb.created_by.id, "username": fb.created_by.username, "profile_image":fb.created_by.profile_image}
             })
     return feedbacks
 
@@ -252,6 +252,6 @@ def get_feedbacks_for_shared_trip(
             "id": fb.id,
             "rating": fb.rating,
             "comment": fb.comment,
-            "user": {"id": fb.created_by.id, "username": fb.created_by.username}
+            "user": {"id": fb.created_by.id, "username": fb.created_by.username, "profile_image":fb.created_by.profile_image}
         })
     return feedbacks

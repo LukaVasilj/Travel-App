@@ -1,0 +1,23 @@
+.profile-image-circle {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid #ccc;
+  background: #fff;
+  display: block;
+  margin: 0 auto 16px auto;
+  overflow: hidden;
+}
+
+.profile-image-circle-small {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid #ccc;
+  background: #fff;
+  display: inline-block;
+  margin-right: 10px;
+  vertical-align: middle;
+}

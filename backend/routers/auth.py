@@ -19,6 +19,8 @@ from database import SessionLocal, engine, Base
 from models import User
 from utils import send_verification_email, hash_password, generate_otp_secret, generate_qr_code, decode_verification_token
 from fastapi.responses import HTMLResponse
+from fastapi import File, UploadFile , Depends
+
 
 # Definirajte logger
 logger = logging.getLogger(__name__)
@@ -236,6 +238,13 @@ def login(user: UserIn, db: Session = Depends(get_db)):
             detail="Invalid email or password"
         )
 
+    # PROVJERA JE LI EMAIL VERIFICIRAN
+    if not db_user.is_email_verified:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Email is not verified. Please check your inbox."
+        )
+
     # Generate JWT token with email as the subject
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
@@ -253,6 +262,8 @@ def get_current_user_info(current_user: User = Depends(get_current_user)):
         "username": current_user.username,
         "email": current_user.email,
         "role": current_user.role,
+        "profile_image": current_user.profile_image,  # <-- Dodaj ovo
+
     }
 
 
@@ -260,7 +271,7 @@ def get_current_user_info(current_user: User = Depends(get_current_user)):
 @router.get("/users")
 def search_users(search: str, db: Session = Depends(get_db)):
     users = db.query(User).filter(User.username.ilike(f"%{search}%")).all()
-    return {"users": [{"id": user.id, "username": user.username, "email": user.email} for user in users]}
+    return {"users": [{"id": user.id, "username": user.username, "email": user.email, "profile_image":user.profile_image} for user in users]}
 
 # OAuth Google login
 @router.get('/login/google')
@@ -286,3 +297,26 @@ async def auth_google_callback(request: Request, db: Session = Depends(get_db)):
     response.set_cookie(key="access_token", value=f"Bearer {access_token}", httponly=True)
     return response
 
+@router.post("/upload-profile-image")
+async def upload_profile_image(
+    image: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    import os
+    from uuid import uuid4
+
+    upload_dir = "media/profile_images"
+    os.makedirs(upload_dir, exist_ok=True)
+    ext = os.path.splitext(image.filename)[1]  # <-- ispravljeno s 'image'
+    filename = f"{uuid4()}{ext}"
+    file_path = os.path.join(upload_dir, filename)
+
+    with open(file_path, "wb") as image_file:
+        content = await image.read()  # <-- ispravljeno s 'image'
+        image_file.write(content)
+
+    current_user.profile_image = f"/media/profile_images/{filename}"
+    db.commit()
+
+    return {"profile_image": current_user.profile_image}

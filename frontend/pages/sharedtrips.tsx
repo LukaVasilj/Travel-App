@@ -243,6 +243,14 @@ const SharedTrips = () => {
                             <b>Route:</b> {capitalize(trip.transport_option.currLocation)} &rarr; {capitalize(trip.transport_option.departure)}
                           </div>
                         )}
+                        {trip.transport_option.bookingLink && (
+                          <div>
+                            <b>Booking Link:</b>{' '}
+                            <a href={trip.transport_option.bookingLink} target="_blank" rel="noopener noreferrer">
+                              {trip.transport_option.bookingLink}
+                            </a>
+                          </div>
+                        )}
                       </div>
                     )}
                     {/* Accommodation */}

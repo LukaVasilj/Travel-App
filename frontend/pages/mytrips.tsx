@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import AppNavbar from '../components/Navbar';
 import { Container, Card, Spinner, Button, Modal, Carousel, Alert } from 'react-bootstrap';
+import '../styles/profile-picture.css';
 
 interface Trip {
   id: number;
@@ -18,7 +19,7 @@ interface Feedback {
   id: number;
   rating: number;
   comment: string;
-  user: { id: number; username: string };
+  user: { id: number; username: string; profile_image?: string };
 }
 
 // Helper za veliko prvo slovo
@@ -267,6 +268,14 @@ const MyTrips = () => {
                           <b>Route:</b> {capitalize(trip.transport_option.currLocation)} &rarr; {capitalize(trip.transport_option.departure)}
                         </div>
                       )}
+                      {trip.transport_option.bookingLink && (
+                          <div>
+                            <b>Booking Link:</b>{' '}
+                            <a href={trip.transport_option.bookingLink} target="_blank" rel="noopener noreferrer">
+                              {trip.transport_option.bookingLink}
+                            </a>
+                          </div>
+                        )}
                     </div>
                   )}
                   {/* Accommodation */}
@@ -377,7 +386,13 @@ const MyTrips = () => {
                     <h6>Feedback</h6>
                     {feedbacks[trip.id] && feedbacks[trip.id].length > 0 ? (
                       feedbacks[trip.id].map(fb => (
-                        <Alert key={fb.id} variant="light" style={{ border: '1px solid #ddd', marginBottom: 5 }}>
+                        <Alert key={fb.id} variant="light" style={{ border: '1px solid #ddd', marginBottom: 5, display: 'flex', alignItems: 'center' }}>
+                          <img
+                            src={fb.user.profile_image ? `http://localhost:8000${fb.user.profile_image}` : "/default-profile.png"}
+                            alt="Profilna slika"
+                            className="profile-image-circle-small"
+                            style={{ width: 32, height: 32, marginRight: 10 }}
+                          />
                           <b>{fb.user.username}:</b> {fb.comment} <span style={{ color: '#f39c12' }}>({fb.rating}/5)</span>
                         </Alert>
                       ))

@@ -2,6 +2,8 @@ import AppNavbar from '../components/Navbar';
 import { useState, useEffect } from 'react';
 import { Container, Form, Button, ListGroup, Alert } from 'react-bootstrap';
 import axios from 'axios';
+import '../styles/profile-picture.css'; // za .profile-image-circle
+
 
 const FriendsPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -241,8 +243,16 @@ const FriendsPage = () => {
         <h3 style={{ marginTop: '30px' }}>Search Results</h3>
         <ListGroup>
           {searchResults.map((user) => (
-            <ListGroup.Item key={user.id}>
-              {user.username} ({user.email})
+            <ListGroup.Item key={user.id} style={{ display: 'flex', alignItems: 'center' }}>
+              <img
+                src={user.profile_image ? `http://localhost:8000${user.profile_image}` : "/default-profile.png"}
+                alt="Profilna slika"
+                className="profile-image-circle"
+                style={{ marginRight: 12, width: 40, height: 40 }}
+              />
+              <span style={{ flex: 1 }}>
+                {user.username} ({user.email})
+              </span>
               <Button
                 variant="success"
                 style={{ float: 'right' }}
@@ -256,8 +266,16 @@ const FriendsPage = () => {
         <h3 style={{ marginTop: '30px' }}>Friend Requests</h3>
         <ListGroup>
           {friendRequests.map((req) => (
-            <ListGroup.Item key={req.id}>
-              Friend request from user: {req.user_id}
+            <ListGroup.Item key={req.id} style={{ display: 'flex', alignItems: 'center' }}>
+              <img
+                src={req.profile_image ? `http://localhost:8000${req.profile_image}` : "/default-profile.png"}
+                alt="Profilna slika"
+                className="profile-image-circle"
+                style={{ marginRight: 12, width: 40, height: 40 }}
+              />
+              <span style={{ flex: 1 }}>
+                Friend request from user: {req.username}
+              </span>
               <Button variant="success" onClick={() => handleRespondToRequest(req.id, 'accept')}>
                 Accept
               </Button>
@@ -270,8 +288,16 @@ const FriendsPage = () => {
         <h3 style={{ marginTop: '30px' }}>Your Friends</h3>
         <ListGroup>
           {friends.map((friend) => (
-            <ListGroup.Item key={friend.id}>
-              {friend.username} ({friend.email})
+            <ListGroup.Item key={friend.id} style={{ display: 'flex', alignItems: 'center' }}>
+              <img
+                src={friend.profile_image ? `http://localhost:8000${friend.profile_image}` : "/default-profile.png"}
+                alt="Profilna slika"
+                className="profile-image-circle"
+                style={{ marginRight: 12, width: 40, height: 40 }}
+              />
+              <span style={{ flex: 1 }}>
+                {friend.username} ({friend.email})
+              </span>
               <Button
                 variant="danger"
                 style={{ float: 'right' }}

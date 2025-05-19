@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from database import SessionLocal, get_db
-from models import User, Friend
+from models import User, Friend , FriendshipStatus
 from pydantic import BaseModel
 from routers.auth import get_current_user  # Uvoz funkcije iz auth.py
 
@@ -78,10 +78,21 @@ def respond_friend_request(request: FriendRequestAction, db: Session = Depends(g
 
 @router.get("/friend-requests/{user_id}")
 def get_friend_requests(user_id: int, db: Session = Depends(get_db)):
-    requests = db.query(Friend).filter(
-        Friend.friend_id == user_id, Friend.status == "pending"
-    ).all()
-    return {"friend_requests": [{"id": req.id, "user_id": req.user_id} for req in requests]}
+    requests = (
+        db.query(Friend)
+        .filter(Friend.friend_id == user_id, Friend.status == FriendshipStatus.pending)
+        .all()
+    )
+    result = []
+    for req in requests:
+        user = db.query(User).filter(User.id == req.user_id).first()
+        result.append({
+            "id": req.id,
+            "username": user.username,
+            "email": user.email,
+            "profile_image": user.profile_image  # <-- OVO DODAJ!
+        })
+    return {"friend_requests": result}
 
 @router.delete("/remove-friend/{friend_id}")
 def remove_friend(friend_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
@@ -97,36 +108,26 @@ def remove_friend(friend_id: int, db: Session = Depends(get_db), current_user: U
 
 @router.get("/{user_id}")
 def get_friends(user_id: int, db: Session = Depends(get_db)):
-    # Dohvati prijatelje gdje je korisnik inicijator
-    friends_as_initiator = db.query(Friend).filter(
-        Friend.user_id == user_id, Friend.status == "accepted"
-    ).all()
-
-    # Dohvati prijatelje gdje je korisnik primatelj
-    friends_as_recipient = db.query(Friend).filter(
-        Friend.friend_id == user_id, Friend.status == "accepted"
-    ).all()
-
-    # Kombiniraj rezultate
-    friend_details = []
-
-    # Dodaj prijatelje gdje je korisnik inicijator
-    for friend in friends_as_initiator:
-        friend_details.append({
-            "id": friend.friend_id,
-            "username": db.query(User).filter(User.id == friend.friend_id).first().username,
-            "email": db.query(User).filter(User.id == friend.friend_id).first().email,
+    friends = (
+        db.query(Friend)
+        .filter(
+            ((Friend.user_id == user_id) | (Friend.friend_id == user_id)),
+            Friend.status == "accepted"  # ili FriendshipStatus.accepted ako koristiš Enum
+        )
+        .all()
+    )
+    result = []
+    for f in friends:
+        # Pronađi pravog prijatelja (ne trenutnog usera)
+        friend_user_id = f.friend_id if f.user_id == user_id else f.user_id
+        user = db.query(User).filter(User.id == friend_user_id).first()
+        result.append({
+            "id": user.id,
+            "username": user.username,
+            "email": user.email,
+            "profile_image": user.profile_image  # <-- OVO JE KLJUČNO!
         })
-
-    # Dodaj prijatelje gdje je korisnik primatelj
-    for friend in friends_as_recipient:
-        friend_details.append({
-            "id": friend.user_id,
-            "username": db.query(User).filter(User.id == friend.user_id).first().username,
-            "email": db.query(User).filter(User.id == friend.user_id).first().email,
-        })
-
-    return {"friends": friend_details}
+    return {"friends": result}
 
 @router.get("/", response_model=list[dict])
 def get_my_friends(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):

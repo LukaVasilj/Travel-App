@@ -23,6 +23,7 @@ class User(Base):
     is_email_verified = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     otp_secret = Column(String(255), nullable=True)  # Dodano polje za 2FA tajni ključ
+    profile_image = Column(String(255), nullable=True)  # <-- Dodaj ovu liniju
 
     
     # Relationship for friends

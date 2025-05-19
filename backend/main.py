@@ -4,6 +4,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi_csrf_protect import CsrfProtect
 from pydantic import BaseModel
 from starlette.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
+
 
 from routers import auth  # Ensure your auth router is imported correctly
 from routers import friends
@@ -41,6 +43,7 @@ def get_csrf_config():
 app.include_router(auth.router, prefix="/api/auth")
 app.include_router(friends.router, prefix="/api/friends", tags=["friends"])
 app.include_router(trips.router, prefix="/api", tags=["trips"])
+app.mount("/media", StaticFiles(directory="media"), name="media")
 
 # CSRF token endpoint: generate token and set it in a cookie manually
 @app.get("/api/csrf-token")
