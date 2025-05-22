@@ -94,7 +94,7 @@ const FlightsPage = () => {
                 {flight.image && (
                   <Card.Img variant="top" src={flight.image} alt={flight.airline} />
                 )}
-                <Card.Body>
+                <Card.Body style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
                   <Card.Title>{flight.airline}</Card.Title>
                   <Card.Text>Price: ${flight.price}</Card.Text>
                   {tripDates && (
@@ -113,7 +113,7 @@ const FlightsPage = () => {
                   <Button
                     variant="secondary"
                     onClick={e => { e.stopPropagation(); handleShowDetails(flight); }}
-                    style={{ marginTop: '10px' }}
+                    style={{ marginTop: 'auto', alignSelf: 'flex-start' }}
                   >
                     See details
                   </Button>

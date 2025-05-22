@@ -86,34 +86,34 @@ const TransportOptions = () => {
                 {option.image && (
                   <Card.Img variant="top" src={option.image} alt={option.company} />
                 )}
-                <Card.Body>
-                  <Card.Title>{option.company} ({option.type})</Card.Title>
-                  <Card.Text>Price: ${option.price}</Card.Text>
-                  {/* Za rent-a-car ne prikazuj vrijeme, rutu i trajanje */}
-                  {option.type !== 'rent-a-car' && tripDates && (
-                    <>
-                      <Card.Text>
-                        Duration: {option.duration}
-                      </Card.Text>
-                      <Card.Text>
-                        Departure Date: {formatDateTime(tripDates.startDate, option.departure_time)}
-                      </Card.Text>
-                      <Card.Text>
-                        Arrival Date: {formatDateTime(tripDates.startDate, option.arrival_time)}
-                      </Card.Text>
-                      <Card.Text>
-                        Route: {formatRoute(option.departure, option.destination)}
-                      </Card.Text>
-                    </>
-                  )}
-                  <Button
-                    variant="secondary"
-                    onClick={e => { e.stopPropagation(); handleShowDetails(option); }}
-                    style={{ marginTop: '10px' }}
-                  >
-                    See details
-                  </Button>
-                </Card.Body>
+                <Card.Body style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+  <Card.Title>{option.company} ({option.type})</Card.Title>
+  <Card.Text>Price: ${option.price}</Card.Text>
+  {/* Za rent-a-car ne prikazuj vrijeme, rutu i trajanje */}
+  {option.type !== 'rent-a-car' && tripDates && (
+    <>
+      <Card.Text>
+        Duration: {option.duration}
+      </Card.Text>
+      <Card.Text>
+        Departure Date: {formatDateTime(tripDates.startDate, option.departure_time)}
+      </Card.Text>
+      <Card.Text>
+        Arrival Date: {formatDateTime(tripDates.startDate, option.arrival_time)}
+      </Card.Text>
+      <Card.Text>
+        Route: {formatRoute(option.departure, option.destination)}
+      </Card.Text>
+    </>
+  )}
+  <Button
+    variant="secondary"
+    onClick={e => { e.stopPropagation(); handleShowDetails(option); }}
+    style={{ marginTop: 'auto', alignSelf: 'flex-start' }}
+  >
+    See details
+  </Button>
+</Card.Body>
               </Card>
             ))}
           </div>

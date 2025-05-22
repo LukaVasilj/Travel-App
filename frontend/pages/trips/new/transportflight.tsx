@@ -44,7 +44,7 @@ const TransportFlight = () => {
       price: 0,
       departure_time: '',
       arrival_time: '',
-      image: '/images/ride.jpg' // Dodaj sliku za ovu opciju
+      image: '/images/ride.jpg'
     };
     options.unshift(defaultOption);
 
@@ -115,12 +115,12 @@ const TransportFlight = () => {
                 {option.image && (
                   <Card.Img variant="top" src={option.image} alt={option.name} />
                 )}
-                <Card.Body>
+                <Card.Body style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
                   <Card.Title>{option.name}</Card.Title>
                   {option.id !== 'default' && (
                     <>
                       <Card.Text>Price: ${option.price}</Card.Text>
-                      {tripDates && (
+                      {tripDates && !option.name.toLowerCase().includes('rent-a-car') && (
                         <>
                           <Card.Text>
                             Departure Date: {formatDateTime(tripDates.startDate, option.departure_time)}
@@ -136,14 +136,14 @@ const TransportFlight = () => {
                       <Button
                         variant="secondary"
                         onClick={e => { e.stopPropagation(); handleShowDetails(option); }}
-                        style={{ marginTop: '10px' }}
+                        style={{ marginTop: 'auto', alignSelf: 'flex-start' }}
                       >
                         See details
                       </Button>
                     </>
                   )}
                   {option.id === 'default' && (
-                    <Card.Text style={{ color: 'gray' }}>No transport needed</Card.Text>
+                    <Card.Text style={{ color: 'gray', marginTop: 'auto' }}>No transport needed</Card.Text>
                   )}
                 </Card.Body>
               </Card>
@@ -179,8 +179,12 @@ const TransportFlight = () => {
             <div style={{ marginTop: 15 }}>
               <b>Name:</b> {modalOption?.name}<br />
               <b>Price:</b> ${modalOption?.price}<br />
-              <b>Departure:</b> {capitalize(modalOption?.currLocation || '')} at {modalOption?.departure_time}<br />
-              <b>Arrival:</b> {capitalize(modalOption?.departure || '')} at {modalOption?.arrival_time}<br />
+              {!modalOption?.name?.toLowerCase().includes('rent-a-car') && (
+                <>
+                  <b>Departure:</b> {capitalize(modalOption?.currLocation || '')} at {modalOption?.departure_time}<br />
+                  <b>Arrival:</b> {capitalize(modalOption?.departure || '')} at {modalOption?.arrival_time}<br />
+                </>
+              )}
               <b>Route:</b> {capitalize(modalOption?.currLocation || '')} → {capitalize(modalOption?.departure || '')}<br />
             </div>
             {modalOption?.bookingLink && (
