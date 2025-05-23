@@ -255,3 +255,4 @@ def get_feedbacks_for_shared_trip(
             "user": {"id": fb.created_by.id, "username": fb.created_by.username, "profile_image":fb.created_by.profile_image}
         })
     return feedbacks
+

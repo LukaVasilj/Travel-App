@@ -2,40 +2,27 @@ import AppNavbar from '../components/Navbar';
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useRouter } from 'next/router';
-import { Container, Form, Button, Alert } from 'react-bootstrap';
-import { signIn } from 'next-auth/react';
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [csrfToken, setCsrfToken] = useState('');
+  const [error, setError] = useState('');
   const [message, setMessage] = useState('');
-  const [error, setError] = useState(''); // Dodano stanje za greške
   const router = useRouter();
 
-  const fetchCsrfToken = async () => {
-    try {
-      const response = await fetch('http://localhost:8000/api/csrf-token', { credentials: 'include' });
-      const data = await response.json();
-      const token = Array.isArray(data.csrf_token) ? data.csrf_token[0] : data.csrf_token;
-      return token;
-    } catch (error) {
-      console.error("Error fetching CSRF token:", error);
-      return null;
-    }
-  };
-
   useEffect(() => {
-    const loadCsrfToken = async () => {
-      const token = await fetchCsrfToken();
-      if (token) {
-        setCsrfToken(token);
-        console.log("CSRF token fetched:", token);
-      } else {
-        console.error("CSRF token fetch failed");
+    const fetchCsrfToken = async () => {
+      try {
+        const response = await axios.get('http://localhost:8000/api/csrf-token', {
+          withCredentials: true,
+        });
+        setCsrfToken(response.data.csrf_token);
+      } catch (err) {
+        console.error('Error fetching CSRF token:', err);
       }
     };
-    loadCsrfToken();
+    fetchCsrfToken();
   }, []);
 
   useEffect(() => {
@@ -45,9 +32,8 @@ const Login = () => {
   }, [router.query]);
 
   const handleLogin = async () => {
-    setError(''); // Resetovanje greške
+    setError('');
 
-    // Validacija unosa
     if (!email || !password) {
       setError('Email and password are required.');
       return;
@@ -59,39 +45,30 @@ const Login = () => {
     }
 
     try {
-      console.log("Logging in user with CSRF token:", csrfToken);
       const response = await axios.post(
         'http://localhost:8000/api/auth/login',
         { email, password },
         {
-          headers: { 
-            'X-CSRF-Token': csrfToken, 
-            'Content-Type': 'application/json' 
-          },
+          headers: { 'X-CSRF-Token': csrfToken },
           withCredentials: true,
         }
       );
-      console.log("Login successful:", response.data);
 
       localStorage.setItem('access_token', response.data.access_token);
 
       const userResponse = await axios.get('http://localhost:8000/api/auth/me', {
-        headers: {
-          'Authorization': `Bearer ${response.data.access_token}`
-        },
-        withCredentials: true
+        headers: { Authorization: `Bearer ${response.data.access_token}` },
+        withCredentials: true,
       });
-      const userRole = userResponse.data.role;
 
-      if (userRole === 'admin') {
+      if (userResponse.data.role === 'admin') {
         router.push('/dashboard');
       } else {
         router.push('/glavnastranica');
       }
-    } catch (error) {
-      console.error("Error during login:", error);
-      if (axios.isAxiosError(error) && error.response) {
-        setError(error.response.data.detail || 'Invalid email or password.');
+    } catch (err) {
+      if (axios.isAxiosError(err) && err.response) {
+        setError(err.response.data.detail || 'Invalid email or password.');
       } else {
         setError('An unexpected error occurred. Please try again.');
       }
@@ -101,40 +78,53 @@ const Login = () => {
   return (
     <>
       <AppNavbar />
-      <Container>
-        <h1>Login</h1>
-        {message && (
-          <Alert variant="success">
-            {message === 'verified' && 'Your email has been successfully verified. You can now log in.'}
-            {message === 'already_verified' && 'Your email is already verified. Please log in.'}
-          </Alert>
-        )}
-        {error && <Alert variant="danger">{error}</Alert>} {/* Prikaz greške */}
-        <Form>
-          <Form.Group controlId="formEmail">
-            <Form.Label>Email</Form.Label>
-            <Form.Control
-              type="email"
-              placeholder="Enter email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-          </Form.Group>
-          <Form.Group controlId="formPassword">
-            <Form.Label>Password</Form.Label>
-            <Form.Control
-              type="password"
-              placeholder="Enter password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-          </Form.Group>
-          <Button variant="primary" onClick={handleLogin}>Login</Button>
-        </Form>
-        <Button variant="secondary" onClick={() => signIn('google', { callbackUrl: '/' })}>
-          Login with Google
-        </Button>
-      </Container>
+      <div className="flex items-center justify-center min-h-screen bg-[var(--background)] px-4">
+        <div className="w-full max-w-lg bg-white dark:bg-[#1a1a1a] rounded-3xl shadow-2xl p-10 transition-all">
+          <h1 className="text-4xl font-extrabold text-center text-[var(--primary-color)] mb-8 tracking-tight">Login</h1>
+
+          {message && (
+            <p className="text-green-600 text-center mb-6 font-semibold">
+              {message === 'verified' && 'Your email has been successfully verified. You can now log in.'}
+              {message === 'already_verified' && 'Your email is already verified. Please log in.'}
+            </p>
+          )}
+
+          {error && <p className="text-red-500 text-center mb-6 font-semibold">{error}</p>}
+
+          <form className="space-y-6" onSubmit={(e) => { e.preventDefault(); handleLogin(); }}>
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Email</label>
+              <input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="example@mail.com"
+                className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-[#121212] text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-[var(--secondary-color)]"
+                required
+              />
+            </div>
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Password</label>
+              <input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="********"
+                className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-[#121212] text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-[var(--secondary-color)]"
+                required
+              />
+            </div>
+            <button
+              type="submit"
+              className="btn btn-primary w-full text-lg"
+            >
+              Login
+            </button>
+          </form>
+        </div>
+      </div>
     </>
   );
 };

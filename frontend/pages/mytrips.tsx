@@ -3,6 +3,7 @@ import AppNavbar from '../components/Navbar';
 import { Container, Card, Spinner, Button, Modal, Carousel, Alert } from 'react-bootstrap';
 import '../styles/profile-picture.css';
 
+
 interface Trip {
   id: number;
   name: string;

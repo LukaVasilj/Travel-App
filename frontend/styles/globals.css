@@ -3,14 +3,20 @@
 @tailwind utilities;
 
 :root {
-  --background: #ffffff;
+  --background: #F4F6F8;
   --foreground: #171717;
+
+  /* Tvoje primarne boje za app */
+  --primary-color: #1565C0;   /* Royal Blue */
+  --secondary-color: #1E88E5; /* Light Blue */
+  --accent-color: #ffa407;    /* Golden Yellow */
+  --hover-color: rgb(212, 152, 0);     /* Darker Yellow */
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #0a0a0a;
-    --foreground: #ededed;
+    --foreground: #F4F6F8;
   }
 }
 
@@ -18,5 +24,93 @@ body {
   color: var(--foreground);
   background: var(--background);
   font-family: Arial, Helvetica, sans-serif;
+  margin: 0;
+  padding: 0;
 }
 
+/* Globalni container za lijepi padding i centriranje sadržaja */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+/* Naslovi */
+h1, h2, h3, h4, h5, h6 {
+  color: var(--primary-color);
+  font-family: 'Montserrat', sans-serif;
+  margin-bottom: 1rem;
+}
+
+button,
+.btn {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 600;
+  border-radius: 8px;          /* Zaobljeniji rubovi */
+  padding: 0.75rem 1.8rem;     /* Više paddinga za bolji izgled */
+  cursor: pointer;
+  transition: background-color 0.3s ease, box-shadow 0.3s ease, transform 0.2s ease;
+  border: none;
+  box-shadow: 0 4px 6px rgba(21, 101, 192, 0.3); /* Lagani shadow */
+  letter-spacing: 0.03em;
+  user-select: none;
+  display: inline-block;
+  text-align: center;
+}
+
+.btn-primary {
+  background-color: var(--accent-color);
+  color: white;
+  box-shadow: 0 6px 12px rgba(234, 230, 1, 0.5);
+}
+
+.btn-primary:hover,
+.btn-primary:focus {
+  background-color: var(--hover-color);
+  box-shadow: 0 8px 16px rgba(234, 230, 1, 0.5);
+  transform: translateY(-2px);
+  outline: none;
+}
+
+
+.btn-primary:active {
+  background-color: #744a01; /* Tamnija nijansa za klik */
+  box-shadow: 0 4px 8px rgba(234, 230, 1, 0.5);
+  transform: translateY(0);
+}
+
+.btn-secondary {
+  background-color: var(--accent-color);
+  color: var(--foreground);
+  box-shadow: 0 6px 12px rgba(255, 193, 7, 0.5);
+}
+
+.btn-secondary:hover,
+.btn-secondary:focus {
+  background-color: #e6b800; /* tamnija nijansa žute */
+  box-shadow: 0 8px 16px rgba(230, 184, 0, 0.7);
+  outline: none;
+}
+
+.btn-secondary:active {
+  background-color: #b38600;
+  box-shadow: 0 4px 8px rgba(179, 134, 0, 0.8);
+  transform: translateY(0);
+}
+
+/* Razmak između buttona */
+.btn + .btn {
+  margin-left: 1rem;
+}
+
+/* Fokus za pristupačnost */
+button:focus-visible {
+  outline: 2px solid var(--secondary-color);
+  outline-offset: 3px;
+}
+
+.feature-card:hover {
+  transform: translateY(-10px);
+  box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+  transition: all 0.3s ease;
+}

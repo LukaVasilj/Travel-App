@@ -1,7 +1,6 @@
 import AppNavbar from '../components/Navbar';
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Container, Form, Button } from 'react-bootstrap';
 import { useRouter } from 'next/router';
 
 const Register = () => {
@@ -16,13 +15,14 @@ const Register = () => {
   useEffect(() => {
     const fetchCsrfToken = async () => {
       try {
-        const response = await axios.get('http://localhost:8000/api/csrf-token', { withCredentials: true });
+        const response = await axios.get('http://localhost:8000/api/csrf-token', {
+          withCredentials: true,
+        });
         setCsrfToken(response.data.csrf_token);
       } catch (err) {
         console.error('Error fetching CSRF token:', err);
       }
     };
-
     fetchCsrfToken();
   }, []);
 
@@ -33,18 +33,15 @@ const Register = () => {
     }
 
     try {
-      await axios.post('http://localhost:8000/api/auth/register', {
-        email,
-        username,
-        password,
-      }, {
-        headers: {
-          'X-CSRF-Token': csrfToken,
-        },
-        withCredentials: true,
-      });
+      await axios.post(
+        'http://localhost:8000/api/auth/register',
+        { email, username, password },
+        {
+          headers: { 'X-CSRF-Token': csrfToken },
+          withCredentials: true,
+        }
+      );
 
-      // Redirect to email verification page or show success message
       alert('Registration successful. Please check your email to verify your account.');
       router.push('/verify-email');
     } catch (err) {
@@ -59,50 +56,65 @@ const Register = () => {
   return (
     <>
       <AppNavbar />
-    <Container>
-      <h1>Register</h1>
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-      <Form>
-        <Form.Group controlId="formUsername">
-          <Form.Label>Username</Form.Label>
-          <Form.Control
-            type="text"
-            placeholder="Enter username"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-          />
-        
-        </Form.Group>
-        <Form.Group controlId="formEmail">
-          <Form.Label>Email address</Form.Label>
-          <Form.Control
-            type="email"
-            placeholder="Enter email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-        </Form.Group>
-        <Form.Group controlId="formPassword">
-          <Form.Label>Password</Form.Label>
-          <Form.Control
-            type="password"
-            placeholder="Enter password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-        </Form.Group>
-        <Form.Group controlId="formConfirmPassword">
-          <Form.Label>Confirm Password</Form.Label>
-          <Form.Control
-            type="password"
-            placeholder="Confirm password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-          />
-        </Form.Group>
-        <Button variant="primary" onClick={handleRegister}>Register</Button>
-      </Form>
-    </Container>
+      <div className="flex items-center justify-center min-h-screen bg-[var(--background)] px-4">
+        <div className="w-full max-w-lg bg-white dark:bg-[#1a1a1a] rounded-3xl shadow-2xl p-10 transition-all">
+          <h1 className="text-4xl font-extrabold text-center text-[var(--primary-color)] mb-8 tracking-tight">Create an Account</h1>
+          {error && <p className="text-red-500 text-center mb-6 font-semibold">{error}</p>}
+          <form className="space-y-6">
+            <div>
+              <label htmlFor="username" className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Username</label>
+              <input
+                id="username"
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="Your username"
+                className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-[#121212] text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-[var(--secondary-color)]"
+              />
+            </div>
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Email</label>
+              <input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="example@mail.com"
+                className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-[#121212] text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-[var(--secondary-color)]"
+              />
+            </div>
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Password</label>
+              <input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="********"
+                className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-[#121212] text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-[var(--secondary-color)]"
+              />
+            </div>
+            <div>
+              <label htmlFor="confirmPassword" className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Confirm Password</label>
+              <input
+                id="confirmPassword"
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="********"
+                className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-[#121212] text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-[var(--secondary-color)]"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={handleRegister}
+              className="btn btn-primary w-full text-lg"
+            >
+              Register
+            </button>
+          </form>
+        </div>
+      </div>
     </>
   );
 };

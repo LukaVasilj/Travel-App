@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 import { Navbar, Nav, NavDropdown, Image } from 'react-bootstrap';
+import styles from '../styles/navbar.module.css';
+import { Plane } from 'lucide-react'	
 
 interface User {
   username: string;
@@ -46,30 +48,22 @@ const AppNavbar = () => {
   const handleDropdownClose = () => setShowDropdown(false);
 
   return (
-    <Navbar bg="light" expand="lg">
-      <Navbar.Brand href="/">TravelApp</Navbar.Brand>
+    <Navbar className={styles.navbar} expand="lg">
+      <Navbar.Brand href="/" className={styles.brand} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+  <Plane size={24} color="#FFC107" /> TravelApp
+</Navbar.Brand>
       <Navbar.Toggle aria-controls="basic-navbar-nav" />
       <Navbar.Collapse id="basic-navbar-nav">
         <Nav className="ml-auto" style={{ alignItems: "center" }}>
           {isAuthenticated && !isPublicRoute ? (
             <>
-              <Nav.Link as={Link} href="/glavnastranica">Home</Nav.Link>
-              <Nav.Link as={Link} href="/friends">Friends</Nav.Link>
-              <Nav.Link as={Link} href="/mytrips">My Trips</Nav.Link>
-              <Nav.Link as={Link} href="/sharedtrips">Shared Trips</Nav.Link>
+              <Nav.Link as={Link} href="/glavnastranica" className={styles.navLink}>Home</Nav.Link>
+              <Nav.Link as={Link} href="/friends" className={styles.navLink}>Friends</Nav.Link>
+              <Nav.Link as={Link} href="/mytrips" className={styles.navLink}>My Trips</Nav.Link>
+              <Nav.Link as={Link} href="/sharedtrips" className={styles.navLink}>Shared Trips</Nav.Link>
               <div style={{ display: "flex", alignItems: "center", position: "relative" }}>
                 <span
-                  style={{
-                    cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    width: 40,
-                    height: 40,
-                    borderRadius: "50%",
-                    overflow: "hidden",
-                    border: "1px solid #ccc",
-                    background: "#fff"
-                  }}
+                  className={styles.profileCircle}
                   onClick={handleProfileClick}
                   tabIndex={0}
                   onBlur={handleDropdownClose}
@@ -79,13 +73,6 @@ const AppNavbar = () => {
                     alt="Profilna slika"
                     width={40}
                     height={40}
-                    style={{
-                      objectFit: "cover",
-                      width: "100%",
-                      height: "100%",
-                      borderRadius: "50%",
-                      display: "block"
-                    }}
                   />
                 </span>
                 <NavDropdown
@@ -94,19 +81,18 @@ const AppNavbar = () => {
                   title={null}
                   id="profile-dropdown"
                   align="end"
-                  style={{ marginLeft: 0 }}
                 >
                   <NavDropdown.Item as={Link} href="/profile">Profile</NavDropdown.Item>
                   <NavDropdown.Item as={Link} href="/settings">Settings</NavDropdown.Item>
                   <NavDropdown.Divider />
-                  <NavDropdown.Item onClick={handleLogout}>Logout</NavDropdown.Item>
+                  <NavDropdown.Item onClick={handleLogout} style={{ color: '#212121' }}>Logout</NavDropdown.Item>
                 </NavDropdown>
               </div>
             </>
           ) : (
             <>
-              <Nav.Link as={Link} href="/login">Login</Nav.Link>
-              <Nav.Link as={Link} href="/register">Register</Nav.Link>
+              <Nav.Link as={Link} href="/login" className={styles.navLink}>Login</Nav.Link>
+              <Nav.Link as={Link} href="/register" className={styles.navLink}>Register</Nav.Link>
             </>
           )}
         </Nav>

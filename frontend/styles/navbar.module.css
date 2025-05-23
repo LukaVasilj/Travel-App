@@ -1,0 +1,95 @@
+/* styles/navbar.module.css */
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@600&display=swap');
+
+.navbar {
+  background-color: #1E88E5;
+  padding: 0.7rem 1.5rem;
+  font-family: 'Montserrat', sans-serif;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.brand {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #ffffff !important;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+  letter-spacing: 1px;
+  transition: color 0.3s ease;
+}
+
+.brand:hover {
+  color: #FFC107 !important;
+}
+
+.navLink {
+  color: #ffffff !important;
+  margin-right: 1.2rem;
+  font-size: 1rem;
+  font-weight: 500;
+  position: relative;
+  padding: 0.5rem 0;
+  transition: all 0.3s ease;
+}
+
+.navLink::after {
+  content: '';
+  position: absolute;
+  width: 0%;
+  height: 2px;
+  bottom: 0;
+  left: 0;
+  background-color: #FFC107;
+  transition: width 0.3s;
+}
+
+.navLink:hover::after {
+  width: 100%;
+}
+
+.navLink:hover {
+  color: #FFC107 !important;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  padding: 0.5rem 0.8rem;
+}
+
+.profileCircle {
+  cursor: pointer;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid #ffffff;
+  background: #ffffff;
+  margin-left: 0.5rem;
+  transition: transform 0.3s;
+}
+
+.profileCircle:hover {
+  transform: scale(1.05);
+}
+
+.dropdownItem {
+  color: #ffffff !important;
+  font-size: 1rem;
+  font-weight: 500;
+  padding: 0.5rem 1rem;
+  font-family: 'Montserrat', sans-serif;
+  transition: all 0.3s ease;
+}
+
+.dropdownItem:hover {
+  color: #FFC107 !important;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+}
+
+.dropdownMenu {
+  background-color: #1E88E5 !important;
+  border: none;
+  
+  padding: 0.5rem 0;
+  border-radius: 8px;
+}
+
+
