@@ -29,38 +29,46 @@ const SettingsPage = () => {
   return (
     <>
       <AppNavbar />
-      <Container style={{ marginTop: '50px', maxWidth: '700px' }}>
-        <h2 className="mb-4 text-center fw-bold">Settings</h2>
-        {message && <Alert variant="info">{message}</Alert>}
+      <Container style={{ marginTop: '60px', maxWidth: '600px', fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif" }}>
+        <h2 className="mb-4 text-center" style={{ color: '#1565C0', fontWeight: '600' }}>Settings</h2>
 
-        <Card className="mb-4 shadow-sm border-0">
+        {message && <Alert variant="info" style={{ fontSize: '0.9rem' }}>{message}</Alert>}
+
+        <Card className="mb-4" style={{ borderRadius: '8px', boxShadow: '0 1px 4px rgba(0,0,0,0.1)', border: 'none' }}>
           <Card.Body>
-            <Card.Title className="mb-3 text-primary fw-semibold">🔒 Change Password</Card.Title>
+            <Card.Title className="mb-3" style={{ color: '#1565C0', fontWeight: '600' }}>🔒 Change Password</Card.Title>
             <Form.Group controlId="formNewPassword">
-              <Form.Label>New Password</Form.Label>
+              <Form.Label style={{ fontWeight: '500' }}>New Password</Form.Label>
               <Form.Control
                 type="password"
                 placeholder="Enter new password"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
+                style={{ borderRadius: '6px', borderColor: '#ccc' }}
               />
             </Form.Group>
             <Button
               variant="primary"
               className="mt-3"
               onClick={handleChangePassword}
+              style={{ borderRadius: '6px', fontWeight: '600', padding: '8px 20px' }}
             >
               Change Password
             </Button>
           </Card.Body>
         </Card>
 
-        <Card className="mb-4 shadow-sm border-0">
+        <Card className="mb-4" style={{ borderRadius: '8px', boxShadow: '0 1px 4px rgba(0,0,0,0.1)', border: 'none' }}>
           <Card.Body>
-            <Card.Title className="mb-3 text-primary fw-semibold">🌐 Language</Card.Title>
+            <Card.Title className="mb-3" style={{ color: '#1565C0', fontWeight: '600' }}>🌐 Language</Card.Title>
             <Form.Group controlId="formLanguageSelect">
-              <Form.Label>Select Language</Form.Label>
-              <Form.Control as="select" value={language} onChange={handleLanguageChange}>
+              <Form.Label style={{ fontWeight: '500' }}>Select Language</Form.Label>
+              <Form.Control
+                as="select"
+                value={language}
+                onChange={handleLanguageChange}
+                style={{ borderRadius: '6px', borderColor: '#ccc' }}
+              >
                 <option value="en">English</option>
                 <option value="hr">Hrvatski</option>
                 <option value="de">Deutsch</option>
@@ -69,9 +77,9 @@ const SettingsPage = () => {
           </Card.Body>
         </Card>
 
-        <Card className="mb-4 shadow-sm border-0">
+        <Card className="mb-4" style={{ borderRadius: '8px', boxShadow: '0 1px 4px rgba(0,0,0,0.1)', border: 'none' }}>
           <Card.Body>
-            <Card.Title className="mb-3 text-primary fw-semibold">🔔 Notifications</Card.Title>
+            <Card.Title className="mb-3" style={{ color: '#1565C0', fontWeight: '600' }}>🔔 Notifications</Card.Title>
             <Form.Group controlId="formNotificationsSwitch">
               <Form.Check
                 type="switch"
@@ -79,18 +87,23 @@ const SettingsPage = () => {
                 label="Enable notifications"
                 checked={notifications}
                 onChange={handleNotificationsChange}
+                style={{ userSelect: 'none' }}
               />
             </Form.Group>
           </Card.Body>
         </Card>
 
-        <Card className="mb-5 shadow-sm border-0 bg-light">
+        <Card className="mb-5" style={{ borderRadius: '8px', boxShadow: '0 1px 4px rgba(0,0,0,0.1)', border: 'none', backgroundColor: '#fff5f5' }}>
           <Card.Body>
-            <Card.Title className="mb-3 text-danger fw-semibold">⚠️ Danger Zone</Card.Title>
-            <p className="text-muted">
+            <Card.Title className="mb-3" style={{ color: '#d32f2f', fontWeight: '600' }}>⚠️ Danger Zone</Card.Title>
+            <p className="text-muted" style={{ fontSize: '0.9rem' }}>
               Deleting your account is irreversible. All your data will be permanently removed.
             </p>
-            <Button variant="danger" onClick={handleDeleteAccount}>
+            <Button
+              variant="danger"
+              onClick={handleDeleteAccount}
+              style={{ borderRadius: '6px', fontWeight: '600', padding: '8px 20px' }}
+            >
               Delete Account
             </Button>
           </Card.Body>

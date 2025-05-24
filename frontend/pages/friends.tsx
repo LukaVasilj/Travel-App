@@ -1,9 +1,77 @@
 import AppNavbar from '../components/Navbar';
 import { useState, useEffect } from 'react';
-import { Container, Form, Button, ListGroup, Alert } from 'react-bootstrap';
+import { Container, Form, Button, ListGroup, Alert, Row, Col } from 'react-bootstrap';
 import axios from 'axios';
 import '../styles/profile-picture.css'; // za .profile-image-circle
 
+// Komponenta za prikaz rezultata pretrage
+const SearchResultList = ({ results, onAddFriend }) => (
+  <ListGroup>
+    {results.map(user => (
+      <ListGroup.Item key={user.id} className="d-flex align-items-center">
+        <img
+          src={user.profile_image ? `http://localhost:8000${user.profile_image}` : "/default-profile.png"}
+          alt="Profilna slika"
+          className="profile-image-circle"
+          style={{ marginRight: 12, width: 40, height: 40 }}
+        />
+        <span className="flex-grow-1">
+          {user.username} ({user.email})
+        </span>
+        <Button variant="success" onClick={() => onAddFriend(user.id)}>
+          Add Friend
+        </Button>
+      </ListGroup.Item>
+    ))}
+  </ListGroup>
+);
+
+// Komponenta za prikaz zahtjeva za prijateljstvo
+const FriendRequestList = ({ requests, onRespond }) => (
+  <ListGroup>
+    {requests.map(req => (
+      <ListGroup.Item key={req.id} className="d-flex align-items-center">
+        <img
+          src={req.profile_image ? `http://localhost:8000${req.profile_image}` : "/default-profile.png"}
+          alt="Profilna slika"
+          className="profile-image-circle"
+          style={{ marginRight: 12, width: 40, height: 40 }}
+        />
+        <span className="flex-grow-1">
+          Friend request from {req.username}
+        </span>
+        <Button variant="success" className="me-2" onClick={() => onRespond(req.id, 'accept')}>
+          Accept
+        </Button>
+        <Button variant="danger" onClick={() => onRespond(req.id, 'reject')}>
+          Reject
+        </Button>
+      </ListGroup.Item>
+    ))}
+  </ListGroup>
+);
+
+// Komponenta za prikaz liste prijatelja
+const FriendList = ({ friends, onRemoveFriend }) => (
+  <ListGroup>
+    {friends.map(friend => (
+      <ListGroup.Item key={friend.id} className="d-flex align-items-center">
+        <img
+          src={friend.profile_image ? `http://localhost:8000${friend.profile_image}` : "/default-profile.png"}
+          alt="Profilna slika"
+          className="profile-image-circle"
+          style={{ marginRight: 12, width: 40, height: 40 }}
+        />
+        <span className="flex-grow-1">
+          {friend.username} ({friend.email})
+        </span>
+        <Button variant="danger" onClick={() => onRemoveFriend(friend.id)}>
+          Remove
+        </Button>
+      </ListGroup.Item>
+    ))}
+  </ListGroup>
+);
 
 const FriendsPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -12,302 +80,174 @@ const FriendsPage = () => {
   const [friendRequests, setFriendRequests] = useState([]);
   const [error, setError] = useState('');
 
-  // Fetch CSRF token
-  const getCsrfToken = async () => {
+  // Funkcija za dohvat CSRF tokena
+  const fetchCsrfToken = async () => {
     try {
-      console.log('Fetching CSRF token...');
-      const response = await axios.get('http://localhost:8000/api/csrf-token', { withCredentials: true });
-      console.log('CSRF token fetched:', response.data.csrf_token);
-      return response.data.csrf_token;
-    } catch (err) {
-      console.error('Error fetching CSRF token:', err);
+      const res = await axios.get('http://localhost:8000/api/csrf-token', { withCredentials: true });
+      return res.data.csrf_token;
+    } catch {
+      setError('Failed to fetch CSRF token.');
       return null;
     }
   };
 
-  // Fetch current user ID
-  const getCurrentUserId = async () => {
+  // Dohvat trenutnog korisnika
+  const fetchCurrentUserId = async () => {
     try {
-      const token = localStorage.getItem('access_token'); // Pretpostavljam da token čuvate u localStorage
-      if (!token) {
-        throw new Error('No access token found');
-      }
+      const token = localStorage.getItem('access_token');
+      if (!token) throw new Error('No access token found');
 
-      const response = await axios.get('http://localhost:8000/api/auth/me', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+      const res = await axios.get('http://localhost:8000/api/auth/me', {
+        headers: { Authorization: `Bearer ${token}` },
         withCredentials: true,
       });
-      return response.data.user_id; // Pretpostavljam da backend vraća user_id
-    } catch (err) {
-      console.error('Error fetching current user ID:', err);
+      return res.data.user_id;
+    } catch {
+      setError('Failed to fetch user data.');
       return null;
     }
   };
 
+  // Učitavanje prijatelja i zahtjeva za prijateljstvo
   useEffect(() => {
-    const fetchUserData = async () => {
-      const userId = await getCurrentUserId();
-      if (!userId) {
-        setError('Failed to fetch user ID.');
-        return;
+    const loadUserData = async () => {
+      const userId = await fetchCurrentUserId();
+      if (!userId) return;
+
+      try {
+        const [friendsRes, requestsRes] = await Promise.all([
+          axios.get(`http://localhost:8000/api/friends/${userId}`),
+          axios.get(`http://localhost:8000/api/friends/friend-requests/${userId}`),
+        ]);
+
+        setFriends(friendsRes.data.friends || []);
+        setFriendRequests(requestsRes.data.friend_requests || []);
+      } catch {
+        setError('Failed to load friends data.');
       }
-
-      // Fetch the current user's friends
-      const fetchFriends = async () => {
-        try {
-          console.log(`Fetching friends for user ID: ${userId}`);
-          const response = await axios.get(`http://localhost:8000/api/friends/${userId}`);
-          console.log('Friends fetched:', response.data.friends);
-          setFriends(response.data.friends);
-        } catch (err) {
-          console.error('Error fetching friends:', err);
-        }
-      };
-
-      // Fetch friend requests
-      const fetchFriendRequests = async () => {
-        try {
-          console.log(`Fetching friend requests for user ID: ${userId}`);
-          const response = await axios.get(`http://localhost:8000/api/friends/friend-requests/${userId}`);
-          console.log('Friend requests fetched:', response.data.friend_requests);
-          setFriendRequests(response.data.friend_requests);
-        } catch (err) {
-          console.error('Error fetching friend requests:', err);
-        }
-      };
-
-      fetchFriends();
-      fetchFriendRequests();
     };
 
-    fetchUserData();
+    loadUserData();
   }, []);
 
+  // Pretraga korisnika
   const handleSearch = async (query) => {
     setSearchQuery(query);
-
-    if (!query) {
-      console.log('Search query is empty, clearing results.');
+    if (!query.trim()) {
       setSearchResults([]);
       return;
     }
 
     try {
-      console.log(`Searching for users with query: ${query}`);
-      const token = localStorage.getItem('access_token'); // Dohvatite token
-      if (!token) {
-        throw new Error('No access token found');
-      }
+      const token = localStorage.getItem('access_token');
+      if (!token) throw new Error('No access token found');
 
-      const currentUserId = await getCurrentUserId(); // Dohvatite trenutnog korisnika
-      const response = await axios.get(`http://localhost:8000/api/auth/users?search=${query}`, {
+      const currentUserId = await fetchCurrentUserId();
+      if (!currentUserId) return;
+
+      const res = await axios.get(`http://localhost:8000/api/auth/users?search=${query}`, {
+        headers: { Authorization: `Bearer ${token}` },
+        withCredentials: true,
+      });
+
+      const filteredUsers = res.data.users.filter(user => user.id !== currentUserId);
+      setSearchResults(filteredUsers);
+    } catch {
+      setError('Search failed.');
+    }
+  };
+
+  // Slanje zahtjeva za prijateljstvo
+  const handleAddFriend = async (friendId) => {
+    const userId = await fetchCurrentUserId();
+    if (!userId) return;
+
+    const csrfToken = await fetchCsrfToken();
+    if (!csrfToken) return;
+
+    try {
+      await axios.post(
+        'http://localhost:8000/api/friends/add-friend',
+        { user_id: userId, friend_id: friendId },
+        { headers: { 'X-CSRF-Token': csrfToken }, withCredentials: true }
+      );
+      setSearchResults(prev => prev.filter(user => user.id !== friendId));
+    } catch {
+      setError('Failed to send friend request.');
+    }
+  };
+
+  // Odgovor na zahtjev za prijateljstvo (prihvati/odbaci)
+  const handleRespondToRequest = async (requestId, action) => {
+    const csrfToken = await fetchCsrfToken();
+    if (!csrfToken) return;
+
+    try {
+      await axios.post(
+        'http://localhost:8000/api/friends/respond-friend-request',
+        { request_id: requestId, action },
+        { headers: { 'X-CSRF-Token': csrfToken }, withCredentials: true }
+      );
+      setFriendRequests(prev => prev.filter(req => req.id !== requestId));
+      if (action === 'accept') {
+        // Opcionalno možeš ponovno fetchati prijatelje ili ih dodati ručno ovdje
+        // setFriends(prev => [...prev, newFriendObject]);
+      }
+    } catch {
+      setError('Failed to respond to friend request.');
+    }
+  };
+
+  // Uklanjanje prijatelja
+  const handleRemoveFriend = async (friendId) => {
+    const csrfToken = await fetchCsrfToken();
+    const token = localStorage.getItem('access_token');
+    if (!csrfToken || !token) {
+      setError('Failed to authenticate request.');
+      return;
+    }
+
+    try {
+      await axios.delete(`http://localhost:8000/api/friends/remove-friend/${friendId}`, {
         headers: {
+          'X-CSRF-Token': csrfToken,
           Authorization: `Bearer ${token}`,
         },
         withCredentials: true,
       });
-
-      // Filtrirajte rezultate da izbacite trenutnog korisnika
-      const filteredResults = response.data.users.filter((user) => user.id !== currentUserId);
-      console.log('Filtered search results:', filteredResults);
-      setSearchResults(filteredResults);
-    } catch (err) {
-      console.error('Error searching users:', err);
-    }
-  };
-
-  const handleAddFriend = async (friendId) => {
-    try {
-      const userId = await getCurrentUserId();
-      if (!userId) {
-        setError('Failed to fetch user ID.');
-        return;
-      }
-
-      console.log(`Sending friend request from user ID: ${userId} to friend ID: ${friendId}`);
-      const csrfToken = await getCsrfToken();
-      if (!csrfToken) {
-        console.error('Failed to fetch CSRF token.');
-        setError('Failed to fetch CSRF token.');
-        return;
-      }
-
-      const response = await axios.post(
-        'http://localhost:8000/api/friends/add-friend',
-        {
-          user_id: userId,
-          friend_id: friendId,
-        },
-        {
-          headers: {
-            'X-CSRF-Token': csrfToken,
-          },
-          withCredentials: true,
-        }
-      );
-
-      console.log('Friend request sent successfully:', response.data);
-      setSearchResults((prev) => prev.filter((user) => user.id !== friendId));
-    } catch (err) {
-      if (err.response) {
-        console.error('Backend error:', err.response.data);
-      } else {
-        console.error('Error adding friend:', err);
-      }
-      setError('Failed to send friend request. Please try again.');
-    }
-  };
-
-  const handleRespondToRequest = async (requestId, action) => {
-    try {
-      const csrfToken = await getCsrfToken();
-      if (!csrfToken) {
-        console.error('Failed to fetch CSRF token.');
-        setError('Failed to fetch CSRF token.');
-        return;
-      }
-
-      await axios.post(
-        'http://localhost:8000/api/friends/respond-friend-request',
-        {
-          request_id: requestId,
-          action: action,
-        },
-        {
-          headers: {
-            'X-CSRF-Token': csrfToken,
-          },
-          withCredentials: true,
-        }
-      );
-
-      console.log(`Friend request ${action}ed successfully.`);
-      setFriendRequests((prev) => prev.filter((req) => req.id !== requestId));
-      if (action === 'accept') {
-        setFriends((prev) => [...prev, requestId]);
-      }
-    } catch (err) {
-      console.error('Error responding to friend request:', err);
-      setError('Failed to respond to friend request. Please try again.');
-    }
-  };
-
-  const handleRemoveFriend = async (friendId) => {
-    try {
-      const csrfToken = await getCsrfToken();
-      const token = localStorage.getItem('access_token'); // Dohvatite token iz localStorage
-      console.log(`Token: ${token}`);
-
-      if (!csrfToken || !token) {
-        console.error('Failed to fetch CSRF token or access token.');
-        setError('Failed to fetch CSRF token or access token.');
-        return;
-      }
-
-      console.log(`Removing friend with ID: ${friendId}`);
-      await axios.delete(`http://localhost:8000/api/friends/remove-friend/${friendId}`, {
-        headers: {
-          'X-CSRF-Token': csrfToken,
-          Authorization: `Bearer ${token}`, // Dodajte token u zaglavlje
-        },
-        withCredentials: true,
-      });
-
-      console.log('Friend removed successfully.');
-      setFriends((prev) => prev.filter((friend) => friend.id !== friendId));
-    } catch (err) {
-      console.error('Error removing friend:', err);
-      setError('Failed to remove friend. Please try again.');
+      setFriends(prev => prev.filter(friend => friend.id !== friendId));
+    } catch {
+      setError('Failed to remove friend.');
     }
   };
 
   return (
     <>
       <AppNavbar />
-      <Container style={{ marginTop: '50px', maxWidth: '600px' }}>
-        <h1>Friends</h1>
-        {error && <Alert variant="danger">{error}</Alert>}
+      <Container style={{ marginTop: 50, maxWidth: 600 }}>
+        <h1 className="mb-4">Friends</h1>
+        {error && <Alert variant="danger" onClose={() => setError('')} dismissible>{error}</Alert>}
+
         <Form>
-          <Form.Group>
+          <Form.Group className="mb-3">
             <Form.Label>Search for Friends</Form.Label>
             <Form.Control
               type="text"
               placeholder="Enter username"
               value={searchQuery}
-              onChange={(e) => handleSearch(e.target.value)}
+              onChange={e => handleSearch(e.target.value)}
             />
           </Form.Group>
         </Form>
-        <h3 style={{ marginTop: '30px' }}>Search Results</h3>
-        <ListGroup>
-          {searchResults.map((user) => (
-            <ListGroup.Item key={user.id} style={{ display: 'flex', alignItems: 'center' }}>
-              <img
-                src={user.profile_image ? `http://localhost:8000${user.profile_image}` : "/default-profile.png"}
-                alt="Profilna slika"
-                className="profile-image-circle"
-                style={{ marginRight: 12, width: 40, height: 40 }}
-              />
-              <span style={{ flex: 1 }}>
-                {user.username} ({user.email})
-              </span>
-              <Button
-                variant="success"
-                style={{ float: 'right' }}
-                onClick={() => handleAddFriend(user.id)}
-              >
-                Add Friend
-              </Button>
-            </ListGroup.Item>
-          ))}
-        </ListGroup>
-        <h3 style={{ marginTop: '30px' }}>Friend Requests</h3>
-        <ListGroup>
-          {friendRequests.map((req) => (
-            <ListGroup.Item key={req.id} style={{ display: 'flex', alignItems: 'center' }}>
-              <img
-                src={req.profile_image ? `http://localhost:8000${req.profile_image}` : "/default-profile.png"}
-                alt="Profilna slika"
-                className="profile-image-circle"
-                style={{ marginRight: 12, width: 40, height: 40 }}
-              />
-              <span style={{ flex: 1 }}>
-                Friend request from user: {req.username}
-              </span>
-              <Button variant="success" onClick={() => handleRespondToRequest(req.id, 'accept')}>
-                Accept
-              </Button>
-              <Button variant="danger" onClick={() => handleRespondToRequest(req.id, 'reject')}>
-                Reject
-              </Button>
-            </ListGroup.Item>
-          ))}
-        </ListGroup>
-        <h3 style={{ marginTop: '30px' }}>Your Friends</h3>
-        <ListGroup>
-          {friends.map((friend) => (
-            <ListGroup.Item key={friend.id} style={{ display: 'flex', alignItems: 'center' }}>
-              <img
-                src={friend.profile_image ? `http://localhost:8000${friend.profile_image}` : "/default-profile.png"}
-                alt="Profilna slika"
-                className="profile-image-circle"
-                style={{ marginRight: 12, width: 40, height: 40 }}
-              />
-              <span style={{ flex: 1 }}>
-                {friend.username} ({friend.email})
-              </span>
-              <Button
-                variant="danger"
-                style={{ float: 'right' }}
-                onClick={() => handleRemoveFriend(friend.id)}
-              >
-                Remove
-              </Button>
-            </ListGroup.Item>
-          ))}
-        </ListGroup>
+
+        <h3>Search Results</h3>
+        <SearchResultList results={searchResults} onAddFriend={handleAddFriend} />
+
+        <h3 className="mt-4">Friend Requests</h3>
+        <FriendRequestList requests={friendRequests} onRespond={handleRespondToRequest} />
+
+        <h3 className="mt-4">Your Friends</h3>
+        <FriendList friends={friends} onRemoveFriend={handleRemoveFriend} />
       </Container>
     </>
   );

@@ -50,7 +50,7 @@
     "departure": "split",
     "price": 20,
     "departure_time": "5:30 AM",
-    "arrival_time": "9:00 PM",
+    "arrival_time": "9:00 AM",
     "image": "/images/flixbus.jpg",
     "bookingLink": "https://www.flixbus.com/"
   },

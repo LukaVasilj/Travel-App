@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import AppNavbar from '../components/Navbar';
-import '../styles/profile-picture.css'; // Dodaj ovo ako već nije importano globalno
+import '../styles/profile-picture.css';
 
 interface User {
   user_id: number;
@@ -14,8 +14,8 @@ const ProfilePage = () => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [csrfToken, setCsrfToken] = useState<string | null>(null);
+  const [selectedFileName, setSelectedFileName] = useState<string>("");
 
-  // Dohvati CSRF token na mount
   useEffect(() => {
     fetch("http://localhost:8000/api/csrf-token", {
       credentials: "include",
@@ -27,7 +27,6 @@ const ProfilePage = () => {
       });
   }, []);
 
-  // Dohvati podatke o korisniku
   useEffect(() => {
     const fetchUser = async () => {
       const token = localStorage.getItem("access_token");
@@ -53,10 +52,10 @@ const ProfilePage = () => {
     fetchUser();
   }, []);
 
-  // Upload slike s CSRF tokenom
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    setSelectedFileName(file.name);  // postavi ime datoteke za prikaz
     const formData = new FormData();
     formData.append("image", file);
 
@@ -74,7 +73,7 @@ const ProfilePage = () => {
     });
     if (res.ok) {
       const data = await res.json();
-      setUser((prev) => prev ? { ...prev, profile_image: data.profile_image } : prev);
+      setUser(prev => prev ? { ...prev, profile_image: data.profile_image } : prev);
     }
   };
 
@@ -84,19 +83,33 @@ const ProfilePage = () => {
   return (
     <>
       <AppNavbar />
-      <div style={{ maxWidth: 500, margin: "2rem auto", padding: 24, border: "1px solid #eee", borderRadius: 8 }}>
-        <h1>Profil</h1>
+      <div className="profile-container">
+        <h1 className="profile-title">Profil</h1>
         <img
           src={user.profile_image ? `http://localhost:8000${user.profile_image}` : "/default-profile.png"}
           alt="Profilna slika"
           className="profile-image-circle"
         />
-        <div style={{ marginBottom: 16 }}>
-          <input type="file" accept="image/*" onChange={handleImageUpload} />
+        <div className="file-input-wrapper">
+          <label htmlFor="file-upload" className="file-input-label">
+            Odaberi novu profilnu sliku
+          </label>
+          <input
+            id="file-upload"
+            type="file"
+            accept="image/*"
+            onChange={handleImageUpload}
+            className="file-input"
+          />
+          <div className="file-name">
+            {selectedFileName || "Nije odabrana nijedna datoteka"}
+          </div>
         </div>
-        <p><strong>Korisničko ime:</strong> {user.username}</p>
-        <p><strong>Email:</strong> {user.email}</p>
-        <p><strong>Uloga:</strong> {user.role}</p>
+        <div className="profile-info">
+          <p><strong>Korisničko ime:</strong> {user.username}</p>
+          <p><strong>Email:</strong> {user.email}</p>
+          <p><strong>Uloga:</strong> {user.role}</p>
+        </div>
       </div>
     </>
   );
