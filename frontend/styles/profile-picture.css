@@ -111,3 +111,14 @@
 .profile-info strong {
   color: #1E88E5;
 }
+
+.show-pictures-btn:hover {
+  background: #a1b0c7 !important;
+  color: #0056b3 !important;
+  border-color: #0056b3 !important;
+  text-decoration: none;
+}
+
+.shared-trip-info-row {
+  margin-bottom: 12px;
+}

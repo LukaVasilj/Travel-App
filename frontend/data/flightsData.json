@@ -19,7 +19,7 @@
     "departure_time": "1:00 PM",
     "arrival_time": "3:30 PM",
     "image": "/images/klm.png",
-    "bookingLink": "https://www.skyscanner.net/transport/flights/zagreb/berlin"
+    "bookingLink": "https://www.skyscanner.net/transport/flights/split/berlin"
   },
   {
     "id": "flight3",
@@ -30,7 +30,7 @@
     "departure_time": "6:00 AM",
     "arrival_time": "9:00 AM",
     "image": "/images/s.jpg",
-    "bookingLink": "https://www.skyscanner.net/transport/flights/split/paris"
+    "bookingLink": "https://www.skyscanner.net/transport/flights/split/berlin"
   },
   {
     "id": "flight4",
@@ -51,6 +51,28 @@
     "price": 180,
     "departure_time": "8:00 PM",
     "arrival_time": "10:30 PM",
+    "image": "/images/tur.png",
+    "bookingLink": "https://www.skyscanner.net/transport/flights/split/berlin"
+  },
+  {
+    "id": "flight6",
+    "airline": "Turkish Airlines",
+    "departure": "berlin",
+    "destination": "split",
+    "price": 180,
+    "departure_time": "8:00 PM",
+    "arrival_time": "10:30 PM",
+    "image": "/images/tur.png",
+    "bookingLink": "https://www.skyscanner.net/transport/flights/split/berlin"
+  },
+  {
+    "id": "flight7",
+    "airline": "Turkish Airlines",
+    "departure": "berlin",
+    "destination": "split",
+    "price": 190,
+    "departure_time": "6:00 PM",
+    "arrival_time": "8:30 PM",
     "image": "/images/tur.png",
     "bookingLink": "https://www.skyscanner.net/transport/flights/split/berlin"
   }

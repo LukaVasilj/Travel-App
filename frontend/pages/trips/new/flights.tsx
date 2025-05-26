@@ -20,6 +20,8 @@ interface Flight {
 // Helper function to capitalize first letter
 const capitalize = (str: string) => str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
 
+// ...existing code...
+
 const FlightsPage = () => {
   const router = useRouter();
   const [flights, setFlights] = useState<Flight[]>([]);
@@ -29,6 +31,7 @@ const FlightsPage = () => {
   // Modal state
   const [showModal, setShowModal] = useState(false);
   const [modalFlight, setModalFlight] = useState<Flight | null>(null);
+  const [returnFlight, setReturnFlight] = useState<Flight | null>(null);
 
   useEffect(() => {
     localStorage.setItem('flightsData', JSON.stringify(flightsData));
@@ -46,6 +49,16 @@ const FlightsPage = () => {
     }
   }, []);
 
+  // Funkcija za izračun cijene povratnog leta za karticu
+  const getReturnFlightPrice = (flight: Flight) => {
+    const ret = flightsData.find(
+      f =>
+        f.departure === flight.destination &&
+        f.destination === flight.departure
+    );
+    return ret ? ret.price : 0;
+  };
+
   const handleSelect = (flightId: string) => {
     setSelectedFlight(flightId);
   };
@@ -58,11 +71,24 @@ const FlightsPage = () => {
   const handleShowDetails = (flight: Flight) => {
     setModalFlight(flight);
     setShowModal(true);
+
+    // Pronađi povratni let
+    if (tripDates) {
+      const ret = flightsData.find(
+        f =>
+          f.departure === flight.destination &&
+          f.destination === flight.departure
+      );
+      setReturnFlight(ret || null);
+    } else {
+      setReturnFlight(null);
+    }
   };
 
   const handleCloseModal = () => {
     setShowModal(false);
     setModalFlight(null);
+    setReturnFlight(null);
   };
 
   // Helper function to format date and time
@@ -90,99 +116,103 @@ const FlightsPage = () => {
             gap: 24,
           }}
         >
-          {flights.map(flight => (
-            <Card
-              key={flight.id}
-              onClick={() => handleSelect(flight.id)}
-              style={{
-                border: selectedFlight === flight.id ? '2px solid #1E88E5' : '1px solid #ddd',
-                boxShadow: '0 3px 8px rgba(0,0,0,0.1)',
-                borderRadius: 12,
-                cursor: 'pointer',
-                transition: 'transform 0.2s ease, box-shadow 0.2s ease',
-                display: 'flex',
-                flexDirection: 'column',
-                height: '100%',
-              }}
-              onMouseEnter={e => {
-                (e.currentTarget as HTMLElement).style.transform = 'translateY(-5px)';
-                (e.currentTarget as HTMLElement).style.boxShadow = '0 10px 20px rgba(30, 136, 229, 0.3)';
-              }}
-              onMouseLeave={e => {
-                (e.currentTarget as HTMLElement).style.transform = 'translateY(0)';
-                (e.currentTarget as HTMLElement).style.boxShadow = '0 3px 8px rgba(0,0,0,0.1)';
-              }}
-            >
-              {flight.image && (
-                <Card.Img
-                  variant="top"
-                  src={flight.image}
-                  alt={flight.airline}
-                  style={{ height: 160, objectFit: 'cover', borderTopLeftRadius: 12, borderTopRightRadius: 12 }}
-                />
-              )}
+          {flights.map(flight => {
+            const returnPrice = getReturnFlightPrice(flight);
+            const totalPrice = flight.price + returnPrice;
+            return (
+              <Card
+                key={flight.id}
+                onClick={() => handleSelect(flight.id)}
+                style={{
+                  border: selectedFlight === flight.id ? '2px solid #1E88E5' : '1px solid #ddd',
+                  boxShadow: '0 3px 8px rgba(0,0,0,0.1)',
+                  borderRadius: 12,
+                  cursor: 'pointer',
+                  transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  height: '100%',
+                }}
+                onMouseEnter={e => {
+                  (e.currentTarget as HTMLElement).style.transform = 'translateY(-5px)';
+                  (e.currentTarget as HTMLElement).style.boxShadow = '0 10px 20px rgba(30, 136, 229, 0.3)';
+                }}
+                onMouseLeave={e => {
+                  (e.currentTarget as HTMLElement).style.transform = 'translateY(0)';
+                  (e.currentTarget as HTMLElement).style.boxShadow = '0 3px 8px rgba(0,0,0,0.1)';
+                }}
+              >
+                {flight.image && (
+                  <Card.Img
+                    variant="top"
+                    src={flight.image}
+                    alt={flight.airline}
+                    style={{ height: 160, objectFit: 'cover', borderTopLeftRadius: 12, borderTopRightRadius: 12 }}
+                  />
+                )}
 
-              <Card.Body style={{ display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
-                <div style={{ flexGrow: 1 }}>
-                  <Card.Title style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: 8 }}>
-                    {flight.airline}
-                  </Card.Title>
-                  <Card.Text style={{ fontWeight: 600, fontSize: '1rem', marginBottom: 6 }}>
-                    Price: ${flight.price}
-                  </Card.Text>
+                <Card.Body style={{ display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
+                  <div style={{ flexGrow: 1 }}>
+                    <Card.Title style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: 8 }}>
+                      {flight.airline}
+                    </Card.Title>
+                    <Card.Text style={{ fontWeight: 600, fontSize: '1rem', marginBottom: 6 }}>
+                      Price: ${totalPrice}
+                    </Card.Text>
 
-                  {tripDates && (
-                    <>
-                      <Card.Text style={{ color: '#555', marginBottom: 4 }}>
-                        Departure Date: {formatDateTime(tripDates.startDate, flight.departure_time)}
-                      </Card.Text>
-                      <Card.Text style={{ color: '#555', marginBottom: 6 }}>
-                        Arrival Date: {formatDateTime(tripDates.startDate, flight.arrival_time)}
-                      </Card.Text>
-                    </>
-                  )}
+                    {tripDates && (
+                      <>
+                        <Card.Text style={{ color: '#555', marginBottom: 4 }}>
+                          Departure Date: {formatDateTime(tripDates.startDate, flight.departure_time)}
+                        </Card.Text>
+                        <Card.Text style={{ color: '#555', marginBottom: 6 }}>
+                          Arrival Date: {formatDateTime(tripDates.startDate, flight.arrival_time)}
+                        </Card.Text>
+                      </>
+                    )}
 
-                  <Card.Text style={{ color: '#555' }}>
-                    Route: {capitalize(flight.departure)} → {capitalize(flight.destination)}
-                  </Card.Text>
-                </div>
+                    <Card.Text style={{ color: '#555' }}>
+                      Route: {capitalize(flight.departure)} → {capitalize(flight.destination)}
+                    </Card.Text>
+                  </div>
 
-                <div style={{ marginTop: 20 }}>
-                  <Button
-                    variant="primary"
-                    onClick={e => {
-                      e.stopPropagation();
-                      handleShowDetails(flight);
-                    }}
-                    style={{
-                      alignSelf: 'flex-start',
-                      padding: '8px 20px',
-                      fontSize: '0.85rem',
-                      borderRadius: 6,
-                      transition: 'background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease',
-                      color: 'white',
-                      backgroundColor: 'var(--accent-color)',
-                      borderColor: 'var(--accent-color)',
-                    }}
-                    onMouseEnter={e => {
-                      const target = e.currentTarget as HTMLElement;
-                      target.style.backgroundColor = 'var(--hover-color)';
-                      target.style.borderColor = 'var(--hover-color)';
-                      target.style.color = 'white';
-                    }}
-                    onMouseLeave={e => {
-                      const target = e.currentTarget as HTMLElement;
-                      target.style.backgroundColor = 'var(--accent-color)';
-                      target.style.borderColor = 'var(--accent-color)';
-                      target.style.color = 'white';
-                    }}
-                  >
-                    See details
-                  </Button>
-                </div>
-              </Card.Body>
-            </Card>
-          ))}
+                  <div style={{ marginTop: 20 }}>
+                    <Button
+                      variant="primary"
+                      onClick={e => {
+                        e.stopPropagation();
+                        handleShowDetails(flight);
+                      }}
+                      style={{
+                        alignSelf: 'flex-start',
+                        padding: '8px 20px',
+                        fontSize: '0.85rem',
+                        borderRadius: 6,
+                        transition: 'background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease',
+                        color: 'white',
+                        backgroundColor: 'var(--accent-color)',
+                        borderColor: 'var(--accent-color)',
+                      }}
+                      onMouseEnter={e => {
+                        const target = e.currentTarget as HTMLElement;
+                        target.style.backgroundColor = 'var(--hover-color)';
+                        target.style.borderColor = 'var(--hover-color)';
+                        target.style.color = 'white';
+                      }}
+                      onMouseLeave={e => {
+                        const target = e.currentTarget as HTMLElement;
+                        target.style.backgroundColor = 'var(--accent-color)';
+                        target.style.borderColor = 'var(--accent-color)';
+                        target.style.color = 'white';
+                      }}
+                    >
+                      See details
+                    </Button>
+                  </div>
+                </Card.Body>
+              </Card>
+            );
+          })}
         </div>
       ) : (
         <p style={{ textAlign: 'center', marginTop: 20, fontSize: '1.1rem', color: '#555' }}>
@@ -232,33 +262,94 @@ const FlightsPage = () => {
             </Carousel>
           )}
 
-          <div
-            style={{
-              fontSize: '1.1rem',
-              fontWeight: '500',
-              lineHeight: 1.6,
-              fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
-              color: '#333',
-            }}
-          >
-            <p><b>Airline:</b> {modalFlight?.airline}</p>
-            <p><b>Price:</b> ${modalFlight?.price}</p>
-            <p><b>Departure:</b> {capitalize(modalFlight?.departure || '')} at {modalFlight?.departure_time}</p>
-            <p><b>Arrival:</b> {capitalize(modalFlight?.destination || '')} at {modalFlight?.arrival_time}</p>
-            <p><b>Route:</b> {capitalize(modalFlight?.departure || '')} → {capitalize(modalFlight?.destination || '')}</p>
-          </div>
+          {/* Odlazni let */}
+          {modalFlight && tripDates && (
+            <div
+              style={{
+                marginTop: 8,
+                padding: 18,
+                border: '1px solid #e0e0e0',
+                borderRadius: 12,
+                background: '#f7fafc',
+                marginBottom: 24,
+              }}
+            >
+              <h5 style={{ fontWeight: 700, marginBottom: 10 }}>Departure Flight</h5>
+              <div style={{ fontSize: '1.05rem', fontWeight: 500, color: '#444' }}>
+                <p>
+                  <b>Airline:</b> {modalFlight.airline}
+                </p>
+                <p>
+                  <b>Price:</b> ${modalFlight.price}
+                </p>
+                <p>
+                  <b>Departure:</b> {capitalize(modalFlight.departure)} at {modalFlight.departure_time} ({formatDateTime(tripDates.startDate, modalFlight.departure_time)})
+                </p>
+                <p>
+                  <b>Arrival:</b> {capitalize(modalFlight.destination)} at {modalFlight.arrival_time} ({formatDateTime(tripDates.startDate, modalFlight.arrival_time)})
+                </p>
+                <p>
+                  <b>Route:</b> {capitalize(modalFlight.departure)} → {capitalize(modalFlight.destination)}
+                </p>
+              </div>
+              {modalFlight.bookingLink && (
+                <div style={{ marginTop: 18 }}>
+                  <Button
+                    variant="primary"
+                    href={modalFlight.bookingLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ borderRadius: 30, padding: '10px 36px', fontWeight: '600', fontSize: '1rem' }}
+                  >
+                    Book now
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
 
-          {modalFlight?.bookingLink && (
-            <div style={{ marginTop: 30, textAlign: 'center' }}>
-              <Button
-                variant="primary"
-                href={modalFlight.bookingLink}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{ borderRadius: 30, padding: '12px 48px', fontWeight: '600', fontSize: '1.15rem' }}
-              >
-                Book now
-              </Button>
+          {/* Povratni let */}
+          {returnFlight && tripDates && (
+            <div
+              style={{
+                marginTop: 8,
+                padding: 18,
+                border: '1px solid #e0e0e0',
+                borderRadius: 12,
+                background: '#fafbfc',
+              }}
+            >
+              <h5 style={{ fontWeight: 700, marginBottom: 10 }}>Return Flight</h5>
+              <div style={{ fontSize: '1.05rem', fontWeight: 500, color: '#444' }}>
+                <p>
+                  <b>Airline:</b> {returnFlight.airline}
+                </p>
+                <p>
+                  <b>Price:</b> ${returnFlight.price}
+                </p>
+                <p>
+                  <b>Departure:</b> {capitalize(returnFlight.departure)} at {returnFlight.departure_time} ({formatDateTime(tripDates.endDate, returnFlight.departure_time)})
+                </p>
+                <p>
+                  <b>Arrival:</b> {capitalize(returnFlight.destination)} at {returnFlight.arrival_time} ({formatDateTime(tripDates.endDate, returnFlight.arrival_time)})
+                </p>
+                <p>
+                  <b>Route:</b> {capitalize(returnFlight.departure)} → {capitalize(returnFlight.destination)}
+                </p>
+              </div>
+              {returnFlight.bookingLink && (
+                <div style={{ marginTop: 18 }}>
+                  <Button
+                    variant="primary"
+                    href={returnFlight.bookingLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ borderRadius: 30, padding: '10px 36px', fontWeight: '600', fontSize: '1rem' }}
+                  >
+                    Book now
+                  </Button>
+                </div>
+              )}
             </div>
           )}
         </Modal.Body>
@@ -267,6 +358,5 @@ const FlightsPage = () => {
   </>
 );
 }
-
 
 export default FlightsPage;

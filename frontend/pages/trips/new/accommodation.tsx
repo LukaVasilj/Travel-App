@@ -34,15 +34,33 @@ const AccommodationPage = () => {
 
   useEffect(() => {
     localStorage.setItem('accommodationData', JSON.stringify(accommodationData));
+    let accs = [...accommodationData];
+
+    // Dodaj default opciju na početak
+    const defaultAcc: Accommodation = {
+      id: 'default',
+      name: 'Already have accommodation',
+      type: 'other',
+      price: 0,
+      image: '/images/dada.jpg', // koristi neku neutralnu sliku
+      destination: '',
+      location: '',
+      description: 'You already have your own accommodation for this trip.',
+    };
+    accs.unshift(defaultAcc);
+
     const tripDetails = localStorage.getItem('tripDetails');
     if (tripDetails) {
       const { destination } = JSON.parse(tripDetails);
-      const filteredAccommodations = accommodationData.filter(
-        (acc) => acc.destination === destination
+      const filteredAccommodations = accs.filter(
+        (acc) => acc.id === 'default' || acc.destination === destination
       );
       setAccommodations(filteredAccommodations);
+    } else {
+      setAccommodations(accs);
     }
   }, []);
+
 
   const handleSelect = (accommodationId: string) => {
     setSelectedAccommodation(accommodationId);

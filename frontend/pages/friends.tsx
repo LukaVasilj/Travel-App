@@ -3,6 +3,8 @@ import { useState, useEffect } from 'react';
 import { Container, Form, Button, ListGroup, Alert, Row, Col } from 'react-bootstrap';
 import axios from 'axios';
 import '../styles/profile-picture.css'; // za .profile-image-circle
+import exp from 'constants';
+import Card from 'react-bootstrap/Card';
 
 // Komponenta za prikaz rezultata pretrage
 const SearchResultList = ({ results, onAddFriend }) => (
@@ -222,35 +224,77 @@ const FriendsPage = () => {
   };
 
   return (
-    <>
-      <AppNavbar />
-      <Container style={{ marginTop: 50, maxWidth: 600 }}>
-        <h1 className="mb-4">Friends</h1>
-        {error && <Alert variant="danger" onClose={() => setError('')} dismissible>{error}</Alert>}
+  <>
+    <AppNavbar />
+    <Container style={{ marginTop: 50   , maxWidth: '800px'}}>
+      <h1 className="mb-4 text-center">Friends</h1>
 
-        <Form>
-          <Form.Group className="mb-3">
-            <Form.Label>Search for Friends</Form.Label>
-            <Form.Control
-              type="text"
-              placeholder="Enter username"
-              value={searchQuery}
-              onChange={e => handleSearch(e.target.value)}
-            />
-          </Form.Group>
-        </Form>
+      {error && (
+        <Alert variant="danger" onClose={() => setError('')} dismissible>
+          {error}
+        </Alert>
+      )}
 
-        <h3>Search Results</h3>
-        <SearchResultList results={searchResults} onAddFriend={handleAddFriend} />
+      <Card className="mb-4 shadow-sm">
+        <Card.Body>
+          <Form>
+            <Form.Group className="mb-3">
+              <Form.Label><strong>Search for Friends</strong></Form.Label>
+              <Form.Control
+                type="text"
+                placeholder="Enter username"
+                value={searchQuery}
+                onChange={e => handleSearch(e.target.value)}
+              />
+            </Form.Group>
+          </Form>
+        </Card.Body>
+      </Card>
 
-        <h3 className="mt-4">Friend Requests</h3>
-        <FriendRequestList requests={friendRequests} onRespond={handleRespondToRequest} />
+      <Row className="g-4">
+        <Col md={12}>
+          <Card className="shadow-sm">
+            <Card.Header><strong>🔍 Search Results</strong></Card.Header>
+            <Card.Body>
+              {searchResults.length > 0 ? (
+                <SearchResultList results={searchResults} onAddFriend={handleAddFriend} />
+              ) : (
+                <p className="text-muted">No results found.</p>
+              )}
+            </Card.Body>
+          </Card>
+        </Col>
 
-        <h3 className="mt-4">Your Friends</h3>
-        <FriendList friends={friends} onRemoveFriend={handleRemoveFriend} />
-      </Container>
-    </>
-  );
-};
+        <Col md={12}>
+          <Card className="shadow-sm">
+            <Card.Header><strong>📨 Friend Requests</strong></Card.Header>
+            <Card.Body>
+              {friendRequests.length > 0 ? (
+                <FriendRequestList requests={friendRequests} onRespond={handleRespondToRequest} />
+              ) : (
+                <p className="text-muted">No pending friend requests.</p>
+              )}
+            </Card.Body>
+          </Card>
+        </Col>
+
+        <Col md={12}>
+          <Card className="shadow-sm">
+            <Card.Header><strong>👥 Your Friends</strong></Card.Header>
+            <Card.Body>
+              {friends.length > 0 ? (
+                <FriendList friends={friends} onRemoveFriend={handleRemoveFriend} />
+              ) : (
+                <p className="text-muted">You have no friends yet.</p>
+              )}
+            </Card.Body>
+          </Card>
+        </Col>
+      </Row>
+    </Container>
+  </>
+);
+}
+
 
 export default FriendsPage;
