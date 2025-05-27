@@ -63,7 +63,7 @@
     "departure_time": "8:00 PM",
     "arrival_time": "10:30 PM",
     "image": "/images/tur.png",
-    "bookingLink": "https://www.skyscanner.net/transport/flights/split/berlin"
+    "bookingLink": "https://www.skyscanner.net/transport/flights/berlin/split"
   },
   {
     "id": "flight7",
@@ -74,6 +74,6 @@
     "departure_time": "6:00 PM",
     "arrival_time": "8:30 PM",
     "image": "/images/tur.png",
-    "bookingLink": "https://www.skyscanner.net/transport/flights/split/berlin"
+    "bookingLink": "https://www.skyscanner.net/transport/flights/berlin/split"
   }
 ]

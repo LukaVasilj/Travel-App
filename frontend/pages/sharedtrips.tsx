@@ -10,8 +10,9 @@ import {
   Form,
   Alert,
 } from "react-bootstrap";
-import { FiChevronDown, FiChevronUp } from "react-icons/fi";
+import { FiChevronDown, FiChevronUp , FiMapPin} from "react-icons/fi";
 import "../styles/profile-picture.css";
+import "../styles/mytrips.css";
 
 interface Trip {
   id: number;
@@ -81,6 +82,7 @@ const SharedTrips = () => {
   const [showImagesModal, setShowImagesModal] = useState(false);
   const [modalImages, setModalImages] = useState<string[]>([]);
   const [modalAccName, setModalAccName] = useState<string>("");
+  const [openedTripId, setOpenedTripId] = useState<number | null>(null);
 
   // Feedback state
   const [feedbacks, setFeedbacks] = useState<{ [tripId: number]: Feedback[] }>(
@@ -243,92 +245,111 @@ const SharedTrips = () => {
   };
 
   return (
-    <>
-      <AppNavbar />
-      <Container style={{ marginTop: "40px" }}>
-        <h2>Trips Shared With Me</h2>
-        {loading ? (
-          <Spinner animation="border" />
-        ) : sharedTrips.length === 0 ? (
-          <p>No trips shared with you.</p>
-        ) : (
-          sharedTrips.map(({ trip, shared_by, shared_trip_id }, idx) => {
-            if (!trip || !shared_by) return null;
-            const stId = shared_trip_id; // fallback ako nema shared_trip_id
-            return (
-              <Card
-                key={trip.id ?? idx}
-                style={{ marginBottom: "20px", borderColor: "#007bff" }}
-              >
-                <Card.Body>
-                  <Card.Title>
-                    <b>Name:</b> {trip.name}
-                    <span
-                      style={{ float: "right", fontSize: 14, color: "#007bff" }}
-                    >
-                      Shared by: <b>{shared_by.username}</b>
-                    </span>
-                  </Card.Title>
-                  <div>
-                    <div className="shared-trip-info-row">
-                      <b>Dates:</b> {trip.start_date} - {trip.end_date}
+  <>
+    <AppNavbar />
+    <Container className="mytrips-container">
+      <h1>Trips Shared With Me</h1>
+      {loading ? (
+        <Spinner animation="border" />
+      ) : sharedTrips.length === 0 ? (
+        <p>No trips shared with you.</p>
+      ) : (
+        sharedTrips.map(({ trip, shared_by, shared_trip_id }, idx) => {
+          if (!trip || !shared_by) return null;
+          const stId = shared_trip_id;
+          return (
+            <Card
+              key={trip.id ?? idx}
+              className={`mytrips-card${openedTripId === trip.id ? " opened" : ""}`}
+            >
+              <Card.Body>
+                <div
+                  className="mytrips-title-row"
+                  style={{ cursor: "pointer" }}
+                  onClick={() =>
+                    setOpenedTripId(openedTripId === trip.id ? null : trip.id)
+                  }
+                >
+                  <span className="mytrips-name">
+                                     <FiMapPin className="mytrips-name-icon" />
+                                     {trip.name}
+                                   </span>
+                  <span className="mytrips-shared-with">
+                    Shared by: <b>{shared_by.username}</b>
+                  </span>
+                  <Button
+                    variant="link"
+                    className="mytrips-expand-btn"
+                    onClick={e => {
+                      e.stopPropagation();
+                      setOpenedTripId(openedTripId === trip.id ? null : trip.id);
+                    }}
+                    aria-label={openedTripId === trip.id ? "Hide details" : "Show details"}
+                  >
+                    {openedTripId === trip.id ? <FiChevronUp /> : <FiChevronDown />}
+                  </Button>
+                </div>
+
+                {openedTripId === trip.id && (
+                  <>
+                    {/* Trip Info */}
+                    <div className="mytrips-section">
+                      <div className="mytrips-section-title">Trip Info</div>
+                      <div>
+                        <b>Dates:</b> {trip.start_date} - {trip.end_date}
+                        <br />
+                        <b>Transport:</b> {trip.transport_type.toUpperCase()}
+                        <br />
+                        <b>Total Cost:</b> ${trip.total_cost}
+                      </div>
                     </div>
-                    <div className="shared-trip-info-row">
-                      <b>Transport:</b> {trip.transport_type.toUpperCase()}
-                    </div>
-                    <div className="shared-trip-info-row">
-                      <b>Total Cost:</b> ${trip.total_cost}
-                    </div>
+
                     {/* Transport Option */}
                     {trip.transport_option && (
-                      <div className="shared-trip-info-row">
-                        <b>Transport Option:</b>
-                        {trip.transport_option.id === "default" ? (
-                          <> Already have a ride to airport (0$)</>
-                        ) : (
-                          <>
-                            {trip.transport_option.name && (
-                              <> {trip.transport_option.name}</>
-                            )}
-                            {trip.transport_option.company && (
-                              <> ({trip.transport_option.company})</>
-                            )}
-                            {trip.transport_option.price && (
-                              <>
-                                {"  ($"}
-                                {trip.transport_option.price}
-                                {")"}
-                                <Button
-                                  variant="link"
-                                  style={{
-                                    padding: 0,
-                                    marginLeft: 8,
-                                    fontSize: 20,
-                                    verticalAlign: "middle",
-                                    color: "#007bff",
-                                    textDecoration: "none",
-                                  }}
-                                  onClick={() => toggleExpand(trip.id)}
-                                  aria-label={
-                                    expanded[trip.id]
-                                      ? "Hide details"
-                                      : "Show more"
-                                  }
-                                >
-                                  {expanded[trip.id] ? (
-                                    <FiChevronUp />
-                                  ) : (
-                                    <FiChevronDown />
-                                  )}
-                                </Button>
-                              </>
-                            )}
-                          </>
-                        )}
-                        {trip.transport_option && expanded[trip.id] && (
-                          <div
-                            style={{ marginTop: "10px", marginLeft: "10px" }}
-                          >
+                      <div className="mytrips-section">
+                        <div className="mytrips-section-title">Transport Option</div>
+                        <div>
+                          {trip.transport_option.id === "default" ? (
+                            <>Already have a ride to airport (0$)</>
+                          ) : (
+                            <>
+                              {trip.transport_option.name && (
+                                <> <b>{trip.transport_option.name}</b></>
+                              )}
+                              {trip.transport_option.company && (
+                                <> ({trip.transport_option.company})</>
+                              )}
+                              {trip.transport_option.price && (
+                                <>
+                                  {"  ($"}
+                                  {trip.transport_option.price}
+                                  {")"}
+                                  <Button
+                                    variant="link"
+                                    className="mytrips-expand-btn"
+                                    onClick={e => {
+                                      e.stopPropagation();
+                                      toggleExpand(trip.id);
+                                    }}
+                                    aria-label={
+                                      expanded[trip.id]
+                                        ? "Hide details"
+                                        : "Show more"
+                                    }
+                                  >
+                                    {expanded[trip.id] ? (
+                                      <FiChevronUp />
+                                    ) : (
+                                      <FiChevronDown />
+                                    )}
+                                  </Button>
+                                </>
+                              )}
+                            </>
+                          )}
+                        </div>
+                        {expanded[trip.id] && (
+                          <div className="mytrips-expand-section">
                             {trip.transport_option.departure_time && (
                               <div>
                                 <b>Departure Time:</b>{" "}
@@ -345,11 +366,8 @@ const SharedTrips = () => {
                               trip.transport_option.departure && (
                                 <div>
                                   <b>Route:</b>{" "}
-                                  {capitalize(
-                                    trip.transport_option.currLocation
-                                  )}{" "}
-                                  &rarr;{" "}
-                                  {capitalize(trip.transport_option.departure)}
+                                  {capitalize(trip.transport_option.currLocation)}{" "}
+                                  &rarr; {capitalize(trip.transport_option.departure)}
                                 </div>
                               )}
                             {trip.transport_option.bookingLink && (
@@ -368,59 +386,56 @@ const SharedTrips = () => {
                         )}
                       </div>
                     )}
+
                     {/* Accommodation */}
                     {trip.accommodation && (
-                      <div className="shared-trip-info-row">
-                        <b>Accommodation:</b> {trip.accommodation.name} ($
-                        {trip.accommodation.price})
-                        <Button
-                          variant="link"
-                          style={{
-                            padding: 0,
-                            marginLeft: 8,
-                            fontSize: 20,
-                            verticalAlign: "middle",
-                            color: "#007bff",
-                            textDecoration: "none",
-                          }}
-                          onClick={() => toggleAccommodationExpand(trip.id)}
-                          aria-label={
-                            accommodationExpanded[trip.id]
-                              ? "Hide accommodation details"
-                              : "Show accommodation details"
-                          }
-                        >
-                          {accommodationExpanded[trip.id] ? (
-                            <FiChevronUp />
-                          ) : (
-                            <FiChevronDown />
-                          )}
-                        </Button>
-                        {accommodationExpanded[trip.id] && (
-                          <div
-                            style={{ marginTop: "10px", marginLeft: "10px" }}
+                      <div className="mytrips-section">
+                        <div className="mytrips-section-title">Accommodation</div>
+                        <div>
+                          <b>{trip.accommodation.name}</b> (${trip.accommodation.price})
+                          <Button
+                            variant="link"
+                            className="mytrips-expand-btn"
+                            onClick={e => {
+                              e.stopPropagation();
+                              toggleAccommodationExpand(trip.id);
+                            }}
+                            aria-label={
+                              accommodationExpanded[trip.id]
+                                ? "Hide accommodation details"
+                                : "Show accommodation details"
+                            }
                           >
+                            {accommodationExpanded[trip.id] ? (
+                              <FiChevronUp />
+                            ) : (
+                              <FiChevronDown />
+                            )}
+                          </Button>
+                        </div>
+                        {accommodationExpanded[trip.id] && (
+                          <div className="mytrips-expand-section">
                             {trip.accommodation.location && (
-                              <div className="shared-trip-info-row">
+                              <div>
                                 <b>Location:</b> {trip.accommodation.location}
                               </div>
                             )}
                             {trip.accommodation.description && (
                               <div>
-                                <b>Description:</b>{" "}
-                                {trip.accommodation.description}
+                                <b>Description:</b> {trip.accommodation.description}
                               </div>
                             )}
                             {((trip.accommodation.images &&
                               trip.accommodation.images.length > 0) ||
                               trip.accommodation.image) && (
-                              <div style={{ margin: "10px 0" }}>
+                              <div className="mytrips-pictures-row">
                                 <b>Pictures:</b>{" "}
                                 <Button
-                                  className="show-pictures-btn"
+                                  className="mytrips-show-pictures-btn"
                                   variant="light"
                                   size="sm"
-                                  onClick={() => {
+                                  onClick={e => {
+                                    e.stopPropagation();
                                     let imgs: string[] = [];
                                     if (trip.accommodation.image)
                                       imgs.push(trip.accommodation.image);
@@ -440,22 +455,8 @@ const SharedTrips = () => {
                                       trip.accommodation.name
                                     );
                                   }}
-                                  style={{
-                                    marginLeft: 8,
-                                    padding: "2px 10px",
-                                    fontSize: 13,
-                                    borderRadius: 12,
-                                    border: "1px solid #007bff",
-                                    color: "#007bff",
-                                    background: "#f8f9fa",
-                                    fontWeight: 500,
-                                    boxShadow: "none",
-                                    transition: "background 0.2s, color 0.2s",
-                                  }}
                                 >
-                                  <span style={{ verticalAlign: "middle" }}>
-                                    Show pictures
-                                  </span>
+                                  <span>Show pictures</span>
                                 </Button>
                               </div>
                             )}
@@ -475,53 +476,56 @@ const SharedTrips = () => {
                         )}
                       </div>
                     )}
+
                     {/* Flight */}
                     {trip.flight && (
-                      <div className="shared-trip-info-row">
-                        <b>
-                          Flight</b>: $
-                          {(trip.flight?.departure?.price || 0) +
-                            (trip.flight?.return?.price || 0)}
-                        <Button
-                                variant="link"
-                                style={{
-                                  marginLeft: 8,
-                                  fontSize: 20,
-                                  color: "#007bff",
-                                  verticalAlign: "middle",
-                                  textDecoration: "none",
-                                  padding: 0,
-                                }}
-                                onClick={() => toggleFlightExpand(trip.id)}
-                                aria-label={
-                                  flightExpanded[trip.id]
-                                    ? "Hide flight details"
-                                    : "Show flight details"
-                                }
-                              >
-                                {flightExpanded[trip.id] ? (
-                                  <FiChevronUp />
-                                ) : (
-                                  <FiChevronDown />
-                                )}
-                              </Button>
+                      <div className="mytrips-section">
+                        <div className="mytrips-section-title">Flight</div>
+                        <div>
+                          <b>
+                            Total Flight Cost:</b> $
+                            {(trip.flight?.departure?.price || 0) +
+                              (trip.flight?.return?.price || 0)}
+                          <Button
+                            variant="link"
+                            className="mytrips-expand-btn"
+                            onClick={e => {
+                              e.stopPropagation();
+                              toggleFlightExpand(trip.id);
+                            }}
+                            aria-label={
+                              flightExpanded[trip.id]
+                                ? "Hide flight details"
+                                : "Show flight details"
+                            }
+                          >
+                            {flightExpanded[trip.id] ? (
+                              <FiChevronUp />
+                            ) : (
+                              <FiChevronDown />
+                            )}
+                          </Button>
+                        </div>
                         {trip.flight.departure && (
-                          <>
-                            <div>
-                              <b>Departure Flight:</b>{" "}
-                              {trip.flight.departure.airline} ($
-                              {trip.flight.departure.price})
-                              
-                            </div>
-                            {flightExpanded[trip.id] && (
-                              <div style={{ marginLeft: 10, marginTop: 8 }}>
+                          <div>
+                            <b>Departure Flight:</b> {trip.flight.departure.airline} ($
+                            {trip.flight.departure.price})
+                          </div>
+                        )}
+                        {trip.flight.return && (
+                          <div>
+                            <b>Return Flight:</b> {trip.flight.return.airline} ($
+                            {trip.flight.return.price})
+                          </div>
+                        )}
+                        {flightExpanded[trip.id] && (
+                          <div className="mytrips-expand-section">
+                            {trip.flight.departure && (
+                              <>
                                 <div>
                                   <b>Route:</b>{" "}
-                                  {capitalize(trip.flight.departure.departure)}{" "}
-                                  →{" "}
-                                  {capitalize(
-                                    trip.flight.departure.destination
-                                  )}
+                                  {capitalize(trip.flight.departure.departure)} →{" "}
+                                  {capitalize(trip.flight.departure.destination)}
                                 </div>
                                 <div>
                                   <b>Departure Time:</b>{" "}
@@ -538,7 +542,7 @@ const SharedTrips = () => {
                                   )}
                                 </div>
                                 {trip.flight.departure.bookingLink && (
-                                  <div style={{ marginBottom: " 10px" }}>
+                                  <div>
                                     <b>Booking Link:</b>{" "}
                                     <a
                                       href={trip.flight.departure.bookingLink}
@@ -549,19 +553,12 @@ const SharedTrips = () => {
                                     </a>
                                   </div>
                                 )}
-                              </div>
+                                <div style={{ borderTop: "1px solid #b0b8c1", margin: "18px 0" }} />
+                              </>
                             )}
-                          </>
-                        )}
-                        {trip.flight.return && (
-                          <>
-                            <div>
-                              <b>Return Flight:</b> {trip.flight.return.airline}{" "}
-                              (${trip.flight.return.price})
-                            </div>
-                            {flightExpanded[trip.id] && (
-                              <div style={{ marginLeft: 10, marginTop: 8 }}>
-                                <div>
+                            {trip.flight.return && (
+                              <>
+                                <div style={{ marginTop: 10 }}>
                                   <b>Route:</b>{" "}
                                   {capitalize(trip.flight.return.departure)} →{" "}
                                   {capitalize(trip.flight.return.destination)}
@@ -592,133 +589,133 @@ const SharedTrips = () => {
                                     </a>
                                   </div>
                                 )}
-                              </div>
+                              </>
                             )}
-                          </>
+                          </div>
                         )}
                       </div>
                     )}
-                  </div>
-                  {/* FEEDBACK FORM */}
-                  <div style={{ marginTop: 20 }}>
-                    <h6>Feedback</h6>
-                    {feedbacks[stId] && feedbacks[stId].length > 0 && (
-                      <div style={{ marginBottom: 10 }}>
-                        {feedbacks[stId].map((fb) => (
+
+                    {/* Feedback */}
+                    <div className="mytrips-section mytrips-feedback-section">
+                      <div className="mytrips-section-title">Feedback</div>
+                      {feedbacks[stId] && feedbacks[stId].length > 0 ? (
+                        feedbacks[stId].map((fb) => (
                           <Alert
                             key={fb.id}
                             variant="light"
-                            style={{
-                              border: "1px solid #ddd",
-                              marginBottom: 5,
-                            }}
+                            className="mytrips-feedback-alert"
                           >
                             <b>{fb.user.username}:</b> {fb.comment}{" "}
-                            <span style={{ color: "#f39c12" }}>
+                            <span className="mytrips-feedback-rating">
                               ({fb.rating}/5)
                             </span>
                           </Alert>
-                        ))}
-                      </div>
-                    )}
-                    {!feedbackLeft[stId] ? (
-                      <Form>
-                        <Form.Group>
-                          <Form.Label>Rating</Form.Label>
-                          <Form.Control
-                            as="select"
-                            value={feedbackForm[stId]?.rating || ""}
-                            onChange={(e) =>
-                              handleFeedbackChange(
-                                stId,
-                                "rating",
-                                Number(e.target.value)
-                              )
-                            }
+                        ))
+                      ) : (
+                        <span className="mytrips-no-feedback">No feedbacks yet.</span>
+                      )}
+                      {!feedbackLeft[stId] && (
+                        <Form style={{ marginTop: 10 }}>
+                          <Form.Group>
+                            <Form.Label>Rating</Form.Label>
+                            <Form.Control
+                              as="select"
+                              value={feedbackForm[stId]?.rating || ""}
+                              onChange={(e) =>
+                                handleFeedbackChange(
+                                  stId,
+                                  "rating",
+                                  Number(e.target.value)
+                                )
+                              }
+                            >
+                              <option value="">Select</option>
+                              {[1, 2, 3, 4, 5].map((n) => (
+                                <option key={n} value={n}>
+                                  {n}
+                                </option>
+                              ))}
+                            </Form.Control>
+                          </Form.Group>
+                          <Form.Group>
+                            <Form.Label>Comment</Form.Label>
+                            <Form.Control
+                              as="textarea"
+                              rows={2}
+                              value={feedbackForm[stId]?.comment || ""}
+                              onChange={(e) =>
+                                handleFeedbackChange(
+                                  stId,
+                                  "comment",
+                                  e.target.value
+                                )
+                              }
+                            />
+                          </Form.Group>
+                          {feedbackError[stId] && (
+                            <Alert variant="danger">{feedbackError[stId]}</Alert>
+                          )}
+                          {feedbackSuccess[stId] && (
+                            <Alert variant="success">
+                              {feedbackSuccess[stId]}
+                            </Alert>
+                          )}
+                          <Button
+                            variant="primary"
+                            size="sm"
+                            style={{ marginTop: 8 }}
+                            onClick={() => handleFeedbackSubmit(stId, trip.id)}
                           >
-                            <option value="">Select</option>
-                            {[1, 2, 3, 4, 5].map((n) => (
-                              <option key={n} value={n}>
-                                {n}
-                              </option>
-                            ))}
-                          </Form.Control>
-                        </Form.Group>
-                        <Form.Group>
-                          <Form.Label>Comment</Form.Label>
-                          <Form.Control
-                            as="textarea"
-                            rows={2}
-                            value={feedbackForm[stId]?.comment || ""}
-                            onChange={(e) =>
-                              handleFeedbackChange(
-                                stId,
-                                "comment",
-                                e.target.value
-                              )
-                            }
-                          />
-                        </Form.Group>
-                        {feedbackError[stId] && (
-                          <Alert variant="danger">{feedbackError[stId]}</Alert>
-                        )}
-                        {feedbackSuccess[stId] && (
-                          <Alert variant="success">
-                            {feedbackSuccess[stId]}
-                          </Alert>
-                        )}
-                        <Button
-                          variant="primary"
-                          size="sm"
-                          style={{ marginTop: 8 }}
-                          onClick={() => handleFeedbackSubmit(stId, trip.id)}
-                        >
-                          Submit Feedback
-                        </Button>
-                      </Form>
-                    ) : (
-                      <Alert variant="success" style={{ marginTop: 8 }}>
-                        You left feedback for this trip.
-                      </Alert>
-                    )}
-                  </div>
-                </Card.Body>
-              </Card>
-            );
-          })
+                            Submit Feedback
+                          </Button>
+                        </Form>
+                      )}
+                      {feedbackLeft[stId] && (
+                        <Alert variant="success" style={{ marginTop: 8 }}>
+                          You left feedback for this trip.
+                        </Alert>
+                      )}
+                    </div>
+                  </>
+                )}
+              </Card.Body>
+            </Card>
+          );
+        })
+      )}
+    </Container>
+
+    {/* Modal za slike smještaja */}
+    <Modal
+      show={showImagesModal}
+      onHide={handleCloseImagesModal}
+      centered
+      size="lg"
+    >
+      <Modal.Header closeButton>
+        <Modal.Title>Pictures: {modalAccName}</Modal.Title>
+      </Modal.Header>
+      <Modal.Body>
+        {modalImages.length > 0 ? (
+          <Carousel>
+            {modalImages.map((img, idx) => (
+              <Carousel.Item key={idx}>
+                <img
+                  className="d-block w-100 mytrips-modal-img"
+                  src={img}
+                  alt={`Accommodation ${idx + 1}`}
+                />
+              </Carousel.Item>
+            ))}
+          </Carousel>
+        ) : (
+          <p>No pictures available.</p>
         )}
-      </Container>
-      {/* Modal za slike smještaja */}
-      <Modal
-        show={showImagesModal}
-        onHide={handleCloseImagesModal}
-        centered
-        size="lg"
-      >
-        <Modal.Header closeButton>
-          <Modal.Title>Pictures: {modalAccName}</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          {modalImages.length > 0 ? (
-            <Carousel>
-              {modalImages.map((img, idx) => (
-                <Carousel.Item key={idx}>
-                  <img
-                    className="d-block w-100"
-                    src={img}
-                    alt={`Accommodation ${idx + 1}`}
-                    style={{ maxHeight: 400, objectFit: "cover" }}
-                  />
-                </Carousel.Item>
-              ))}
-            </Carousel>
-          ) : (
-            <p>No pictures available.</p>
-          )}
-        </Modal.Body>
-      </Modal>
-    </>
-  );
+      </Modal.Body>
+    </Modal>
+  </>
+);
 };
 
 export default SharedTrips;

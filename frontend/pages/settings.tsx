@@ -48,10 +48,10 @@ const SettingsPage = () => {
               />
             </Form.Group>
             <Button
-              variant="primary"
+              
               className="mt-3"
               onClick={handleChangePassword}
-              style={{ borderRadius: '6px', fontWeight: '600', padding: '8px 20px' }}
+              style={{ borderRadius: '6px', fontWeight: '600', padding: '8px 20px', backgroundColor: '#1565C0', color: '#fff' }}
             >
               Change Password
             </Button>
